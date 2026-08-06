@@ -52,4 +52,25 @@ describe('redactUrl', () => {
 
     expect(redactUrl(url, 'token')).toBe('https://h/f.json?q=hello%20world&token=***')
   })
+
+  it('fails closed when the secret name is escaped differently than a raw scan expects', () => {
+    // URLSearchParams (what fetch.ts's prepare() uses to build the address)
+    // percent-encodes '!' as part of application/x-www-form-urlencoded, while
+    // encodeURIComponent leaves '!' untouched — a raw key comparison misses it.
+    const url = 'https://s3.example.com/birds/about.json?key%21=S3CRET'
+
+    expect(redactUrl(url, 'key!')).not.toContain('S3CRET')
+  })
+
+  it('fails closed when the secret name has a space, escaped as + by URLSearchParams', () => {
+    const url = 'https://s3.example.com/birds/about.json?to+ken=S3CRET'
+
+    expect(redactUrl(url, 'to ken')).not.toContain('S3CRET')
+  })
+
+  it('fails closed when the parser sees the name but a raw scan does not', () => {
+    const url = 'https://h/f.json?%74oken=S3CRET'
+
+    expect(redactUrl(url, 'token')).not.toContain('S3CRET')
+  })
 })

@@ -114,15 +114,12 @@ describe('openLib', () => {
     expect(blob.size).toBeGreaterThan(0)
   })
 
-  it('passes the per-call signal through to the underlying fetch', async () => {
+  it('honours an already-aborted per-call signal instead of the base options', async () => {
     const doFetch = serve({ [`${BASE}/about.json`]: example('about.json') })
     const lib = openLib(BASE, { fetch: doFetch })
-    const controller = new AbortController()
 
-    await lib.about({ signal: controller.signal })
-
-    const init = doFetch.mock.calls[0]?.[1] as RequestInit
-    expect(init.signal).toBeInstanceOf(AbortSignal)
+    await expect(lib.about({ signal: AbortSignal.abort() })).rejects.toBeDefined()
+    expect(doFetch).not.toHaveBeenCalled()
   })
 })
 
@@ -144,5 +141,23 @@ describe('fetchLibs', () => {
       fetchLibs('http://libs.example.com/catalogue.json', { fetch: doFetch }),
     ).rejects.toMatchObject({ code: 'insecure-origin' })
     expect(doFetch).not.toHaveBeenCalled()
+  })
+
+  it('refuses a catalogue address carrying credentials', async () => {
+    const doFetch = serve({})
+
+    await expect(
+      fetchLibs('https://user:pass@libs.example.com/catalogue.json', { fetch: doFetch }),
+    ).rejects.toMatchObject({ code: 'insecure-origin' })
+    expect(doFetch).not.toHaveBeenCalled()
+  })
+
+  it('accepts a catalogue address carrying a query string', async () => {
+    const withQuery = `${CATALOGUE}?v=2`
+    const doFetch = serve({ [withQuery]: example('libs.json') })
+
+    await expect(fetchLibs(withQuery, { fetch: doFetch })).resolves.toMatchObject({
+      ver: { major: 1, minor: 0 },
+    })
   })
 })

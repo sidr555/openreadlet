@@ -2,10 +2,11 @@ import { LibError } from './errors.js'
 import { assertId } from './ids.js'
 
 /**
- * Refuses anything that is not an `https` URL. This is the one check every
- * address handed to storage must pass — a catalogue, a base, a ref or a link
- * in a document — because it is also what keeps a secret from being sent over
- * plain http.
+ * Refuses anything that is not a plain `https` URL: wrong scheme, or
+ * credentials embedded in the address. This is the one check every address
+ * handed to storage must pass — a catalogue, a base, a ref or a link in a
+ * document — because it is also what keeps a secret from being sent over
+ * plain http or logged back out of the address itself.
  */
 export function assertHttps(url: string): URL {
   let parsed: URL
@@ -24,25 +25,26 @@ export function assertHttps(url: string): URL {
     })
   }
 
+  if (parsed.username || parsed.password) {
+    throw new LibError('insecure-origin', 'Address must not carry credentials', {
+      url,
+    })
+  }
+
   return parsed
 }
 
 /**
  * Normalises the base address of a lib: an https URL with no trailing slash,
- * no query string, no fragment and no embedded credentials. A query string or
- * fragment would be silently absorbed into every document path built from it
- * (`{base}/feed.json` becomes `{base}?x=1/feed.json`, or every document
- * collapses to `{base}` once a fragment is present); credentials would reach
- * the error's `url` and browsers reject such URLs at `fetch` anyway.
+ * no query string and no fragment (credentials are already refused by
+ * `assertHttps` above). A query string or fragment would be silently
+ * absorbed into every document path built from it (`{base}/feed.json`
+ * becomes `{base}?x=1/feed.json`, or every document collapses to `{base}`
+ * once a fragment is present) — unlike a catalogue, which lives at an
+ * arbitrary address where a query string is legitimate.
  */
 export function resolveBase(base: string): string {
   const parsed = assertHttps(base)
-
-  if (parsed.username || parsed.password) {
-    throw new LibError('insecure-origin', 'Base address must not carry credentials', {
-      url: base,
-    })
-  }
 
   if (parsed.search) {
     throw new LibError('insecure-origin', 'Base address must not carry a query string', {

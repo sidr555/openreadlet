@@ -206,6 +206,13 @@ const request = async (
         })
       }
 
+      // Likewise, the caller's own signal can abort while the probe is in
+      // flight. That is their cancellation, not evidence of CORS or the
+      // network — surface it as their AbortError, not a LibError.
+      if (options.signal?.aborted) {
+        throw options.signal.reason ?? new DOMException('This operation was aborted', 'AbortError')
+      }
+
       if (blocked) {
         throw new LibError(
           'cors-blocked',

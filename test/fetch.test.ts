@@ -135,6 +135,30 @@ describe('fetchJson', () => {
     ).toBe('timeout')
   })
 
+  it('surfaces the caller abort as its own error when it lands during the cors probe', async () => {
+    const callerController = new AbortController()
+    const doFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.mode === 'no-cors') {
+        return new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => {
+            reject(new DOMException('This operation was aborted', 'AbortError'))
+          })
+          // the caller cancels only once the probe is already in flight
+          setTimeout(() => callerController.abort(), 0)
+        })
+      }
+
+      return Promise.reject(new TypeError('Failed to fetch'))
+    })
+
+    const promise = fetchJson(URL_FEED, 5_000_000, {
+      fetch: doFetch,
+      signal: callerController.signal,
+    })
+
+    await expect(promise).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('reports network-failed when nothing answers at all', async () => {
     const doFetch = vi.fn(async () => {
       throw new TypeError('Failed to fetch')

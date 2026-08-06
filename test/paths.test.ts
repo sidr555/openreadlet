@@ -76,6 +76,19 @@ describe('assertHttps', () => {
   it('rejects an address that is not a URL', () => {
     expect(() => assertHttps('s3.example.com/birds')).toThrowError(LibError)
   })
+
+  it('rejects an address carrying credentials', () => {
+    try {
+      assertHttps('https://user:pass@s3.example.com/birds')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+    }
+  })
+
+  it('accepts an address carrying a query string', () => {
+    expect(assertHttps(`${BASE}?v=2`).search).toBe('?v=2')
+  })
 })
 
 describe('document addresses', () => {

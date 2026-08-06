@@ -98,7 +98,20 @@ export function redactUrl(url: string, secretParam?: string): string {
       })
       .join('&')
 
-    if (!found) return url
+    if (!found) {
+      // A raw scan can miss the parameter because of an encoding mismatch —
+      // `URLSearchParams` (what `prepare()` in fetch.ts uses) escapes `!`,
+      // spaces and other characters differently than `encodeURIComponent`.
+      // Ask the URL parser, which decodes properly, whether it disagrees.
+      // If it does, the raw scan cannot be trusted to have redacted
+      // anything else in the query string either, so fail closed rather
+      // than return the input with the secret still in it.
+      if (parsed.searchParams.has(secretParam)) {
+        return `${parsed.origin}${parsed.pathname}?[redacted]`
+      }
+
+      return url
+    }
 
     return `${beforeQuery}?${redactedQuery}${hash}`
   } catch {
