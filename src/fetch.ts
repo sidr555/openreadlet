@@ -50,6 +50,10 @@ const prepare = (url: string, options: RequestOptions): Prepared => {
     return { target: url, safeUrl: url, headers }
   }
 
+  if (auth.name === '') {
+    throw new LibError('insecure-origin', 'Query auth name must not be empty')
+  }
+
   const withToken = new URL(url)
   withToken.searchParams.set(auth.name, auth.value)
 

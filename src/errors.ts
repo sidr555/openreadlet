@@ -61,7 +61,7 @@ export class LibError extends Error {
  * that there was nothing to redact.
  */
 export function redactUrl(url: string, secretParam?: string): string {
-  if (!secretParam) return url
+  if (secretParam === undefined) return url
 
   let parsed: URL
 
@@ -82,7 +82,7 @@ export function redactUrl(url: string, secretParam?: string): string {
     const beforeQuery = withoutHash.slice(0, queryIndex)
     const query = withoutHash.slice(queryIndex + 1)
     const encodedName = encodeURIComponent(secretParam)
-    let found = false
+    let matches = 0
 
     const redactedQuery = query
       .split('&')
@@ -92,26 +92,30 @@ export function redactUrl(url: string, secretParam?: string): string {
 
         if (key !== encodedName) return pair
 
-        found = true
+        matches += 1
 
         return `${key}=***`
       })
       .join('&')
 
-    if (!found) {
-      // A raw scan can miss the parameter because of an encoding mismatch —
-      // `URLSearchParams` (what `prepare()` in fetch.ts uses) escapes `!`,
-      // spaces and other characters differently than `encodeURIComponent`.
-      // Ask the URL parser, which decodes properly, whether it disagrees.
-      // If it does, the raw scan cannot be trusted to have redacted
-      // anything else in the query string either, so fail closed rather
-      // than return the input with the secret still in it.
-      if (parsed.searchParams.has(secretParam)) {
-        return `${parsed.origin}${parsed.pathname}?[redacted]`
-      }
+    // A raw scan can miss occurrences of the parameter because of an
+    // encoding mismatch — `URLSearchParams` (what `prepare()` in fetch.ts
+    // uses) escapes `!`, spaces and other characters differently than
+    // `encodeURIComponent` — or because the same decoded name appears twice
+    // under two different encodings, so only one of them matches the raw
+    // scan byte for byte. Ask the URL parser, which decodes properly, how
+    // many occurrences it sees. Run this check every time, not only when the
+    // raw scan found nothing, so a second, differently-encoded copy of the
+    // secret can't ride along with the first one's redaction. If the parser
+    // disagrees, the raw scan cannot be trusted to have redacted everything,
+    // so fail closed rather than return output that still carries a secret.
+    const decodedCount = parsed.searchParams.getAll(secretParam).length
 
-      return url
+    if (matches < decodedCount) {
+      return `${parsed.origin}${parsed.pathname}?[redacted]`
     }
+
+    if (matches === 0) return url
 
     return `${beforeQuery}?${redactedQuery}${hash}`
   } catch {

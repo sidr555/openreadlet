@@ -75,6 +75,15 @@ describe('openLib', () => {
     expect(() => openLib('http://s3.example.com/birds')).toThrowError()
   })
 
+  it('does not carry a refused password in the error it throws', () => {
+    try {
+      openLib('https://user:pass@s3.example.com/birds')
+      expect.unreachable('openLib must throw')
+    } catch (error) {
+      expect((error as LibError).url).not.toContain('pass')
+    }
+  })
+
   it('caps the text with its own limit, not the manifest one', async () => {
     const doFetch = serve({ [`${BASE}/text/dawn-song.md`]: 'x'.repeat(2048) })
     const lib = openLib(BASE, { fetch: doFetch, maxTextBytes: 1024 })
@@ -150,6 +159,17 @@ describe('fetchLibs', () => {
       fetchLibs('https://user:pass@libs.example.com/catalogue.json', { fetch: doFetch }),
     ).rejects.toMatchObject({ code: 'insecure-origin' })
     expect(doFetch).not.toHaveBeenCalled()
+  })
+
+  it('does not carry the refused password in the error it raises', async () => {
+    const doFetch = serve({})
+
+    try {
+      await fetchLibs('https://user:pass@libs.example.com/catalogue.json', { fetch: doFetch })
+      expect.unreachable('fetchLibs must throw')
+    } catch (error) {
+      expect((error as LibError).url).not.toContain('pass')
+    }
   })
 
   it('accepts a catalogue address carrying a query string', async () => {

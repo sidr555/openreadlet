@@ -73,4 +73,16 @@ describe('redactUrl', () => {
 
     expect(redactUrl(url, 'token')).not.toContain('S3CRET')
   })
+
+  it('redacts an empty parameter name instead of treating it as "no name given"', () => {
+    const url = 'https://libs.example.com/about.json?=S3CRET'
+
+    expect(redactUrl(url, '')).not.toContain('S3CRET')
+  })
+
+  it('does not leak the secret when the same name appears under two encodings', () => {
+    const url = 'https://h/f.json?token=DECOY&%74oken=S3CRET'
+
+    expect(redactUrl(url, 'token')).not.toContain('S3CRET')
+  })
 })

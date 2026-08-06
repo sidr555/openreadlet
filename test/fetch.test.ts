@@ -228,6 +228,20 @@ describe('authentication', () => {
     expect(new Headers(init.headers).get('authorization')).toBe('Bearer abc')
   })
 
+  it('refuses an empty query auth name before the request goes out', async () => {
+    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      respond('{}'),
+    )
+
+    await expect(
+      fetchJson(URL_FEED, 5_000_000, {
+        fetch: doFetch,
+        auth: { type: 'query', name: '', value: 's3cr3t' },
+      }),
+    ).rejects.toMatchObject({ code: 'insecure-origin' })
+    expect(doFetch).not.toHaveBeenCalled()
+  })
+
   it('appends a query token and keeps it out of the error', async () => {
     const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       respond('', { status: 404 }),

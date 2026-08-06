@@ -57,6 +57,15 @@ describe('resolveBase', () => {
       expect((error as LibError).code).toBe('insecure-origin')
     }
   })
+
+  it('does not echo the password back when refusing a base carrying credentials', () => {
+    try {
+      resolveBase('https://user:pass@s3.example.com/birds')
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).url).not.toContain('pass')
+    }
+  })
 })
 
 describe('assertHttps', () => {
@@ -88,6 +97,36 @@ describe('assertHttps', () => {
 
   it('accepts an address carrying a query string', () => {
     expect(assertHttps(`${BASE}?v=2`).search).toBe('?v=2')
+  })
+
+  it('does not echo the password back when refusing credentials', () => {
+    try {
+      assertHttps('https://user:pass@s3.example.com/birds')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).url).not.toContain('pass')
+      expect((error as LibError).url).toBe('https://s3.example.com/birds')
+    }
+  })
+
+  it('does not echo the password back when the scheme check is what trips', () => {
+    try {
+      assertHttps('http://user:pass@h/x')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).url).not.toContain('pass')
+    }
+  })
+
+  it('reports the reason without a url when the address is not a URL at all', () => {
+    try {
+      assertHttps('s3.example.com/birds')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBeUndefined()
+      expect((error as LibError).message).toContain('s3.example.com/birds')
+    }
   })
 })
 

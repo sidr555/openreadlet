@@ -14,20 +14,23 @@ export function assertHttps(url: string): URL {
   try {
     parsed = new URL(url)
   } catch {
-    throw new LibError('insecure-origin', `Address ${JSON.stringify(url)} is not a URL`, {
-      url,
-    })
+    // Not parseable at all — there is no safe rendering to fall back to, and
+    // guessing one risks echoing back whatever credentials the caller typed.
+    // Drop the `url` field rather than report anything.
+    throw new LibError('insecure-origin', `Address ${JSON.stringify(url)} is not a URL`)
   }
+
+  const safe = `${parsed.origin}${parsed.pathname}`
 
   if (parsed.protocol !== 'https:') {
     throw new LibError('insecure-origin', `Address must use https, got ${parsed.protocol}`, {
-      url,
+      url: safe,
     })
   }
 
   if (parsed.username || parsed.password) {
     throw new LibError('insecure-origin', 'Address must not carry credentials', {
-      url,
+      url: safe,
     })
   }
 
