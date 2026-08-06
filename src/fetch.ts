@@ -139,6 +139,7 @@ const readCapped = async (
 interface Payload {
   bytes: Uint8Array<ArrayBuffer>
   contentType: string
+  safeUrl: string
 }
 
 const request = async (
@@ -157,12 +158,21 @@ const request = async (
   }, options.timeout ?? DEFAULT_TIMEOUT)
 
   const forward = (): void => controller.abort()
-  options.signal?.addEventListener('abort', forward, { once: true })
+
+  if (options.signal?.aborted) {
+    controller.abort()
+  } else {
+    options.signal?.addEventListener('abort', forward, { once: true })
+  }
 
   try {
     let response: Response
 
     try {
+      if (controller.signal.aborted) {
+        throw new DOMException('This operation was aborted', 'AbortError')
+      }
+
       response = await doFetch(target, {
         method: 'GET',
         headers,
@@ -226,6 +236,7 @@ const request = async (
     return {
       bytes: await readCapped(response, limit, safeUrl),
       contentType: response.headers.get('content-type') ?? '',
+      safeUrl,
     }
   } finally {
     clearTimeout(timer)
@@ -238,14 +249,14 @@ export async function fetchJson(
   limit: number,
   options: RequestOptions = {},
 ): Promise<unknown> {
-  const { bytes } = await request(url, limit, options)
+  const { bytes, safeUrl } = await request(url, limit, options)
   const text = new TextDecoder().decode(bytes)
 
   try {
     return JSON.parse(text)
   } catch (error) {
     throw new LibError('bad-json', 'Document is not valid JSON', {
-      url: redactUrl(url, options.auth?.type === 'query' ? options.auth.name : undefined),
+      url: safeUrl,
       cause: error,
     })
   }

@@ -38,6 +38,21 @@ describe('fetchJson', () => {
     )
   })
 
+  it('redacts the query token from the url on bad-json too', async () => {
+    const doFetch = vi.fn(async () => respond('{ not json'))
+
+    try {
+      await fetchJson(URL_FEED, 5_000_000, {
+        fetch: doFetch,
+        auth: { type: 'query', name: 'token', value: 's3cr3t' },
+      })
+      expect.unreachable('fetchJson must throw')
+    } catch (error) {
+      expect((error as LibError).url).toContain('token=***')
+      expect((error as LibError).url).not.toContain('s3cr3t')
+    }
+  })
+
   it.each([
     [404, 'not-found'],
     [403, 'forbidden'],
@@ -110,6 +125,16 @@ describe('fetchJson', () => {
     expect(await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))).toBe(
       'network-failed',
     )
+  })
+
+  it('rejects immediately when the caller signal is already aborted', async () => {
+    const doFetch = vi.fn(async () => respond('{"ver":"1.0"}'))
+
+    await expect(
+      fetchJson(URL_FEED, 5_000_000, { fetch: doFetch, signal: AbortSignal.abort() }),
+    ).rejects.toBeDefined()
+
+    expect(doFetch).not.toHaveBeenCalled()
   })
 })
 
