@@ -14,7 +14,7 @@ import { assertId } from './ids.js'
  * unusual scheme someone invents fails closed by default, not by having
  * been enumerated here.
  */
-const SAFE_SCHEMES = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:'])
+export const SAFE_SCHEMES = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:'])
 
 /**
  * Only render an address when it has a non-empty host and a scheme known to

@@ -1,4 +1,5 @@
 import { LibError, redactUrl } from './errors.js'
+import { SAFE_SCHEMES } from './paths.js'
 
 /**
  * Reading a closed lib. The document format does not change: being closed is
@@ -50,6 +51,17 @@ const encodeBasic = (user: string, password: string): string => {
  * with `URLSearchParams`), but `redactUrl` is still the fallback if that
  * ever stops being true, rather than let an unparseable address through
  * unmasked.
+ *
+ * Guarded the same way `safeAddress` in `paths.ts` is: only proceeds past the
+ * parse for a scheme in the shared `SAFE_SCHEMES` allowlist with a non-empty
+ * host, and falls back to `redactUrl` otherwise, same as an address that does
+ * not parse at all. A `blob:` address keeps its whole inner URL — userinfo
+ * included — in `pathname`, where blanking `username`/`password` below is a
+ * no-op, so without this guard the credential would ride through unmasked.
+ *
+ * The fragment is passed through unmasked, deliberately, same as in
+ * `redactUrl`: a fragment is never sent to a server, so it cannot come from
+ * an address this package builds.
  */
 const buildSafeUrl = (url: string): string => {
   let parsed: URL
@@ -59,6 +71,8 @@ const buildSafeUrl = (url: string): string => {
   } catch {
     return redactUrl(url)
   }
+
+  if (!parsed.host || !SAFE_SCHEMES.has(parsed.protocol)) return redactUrl(url)
 
   parsed.username = ''
   parsed.password = ''
