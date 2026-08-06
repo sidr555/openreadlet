@@ -36,6 +36,9 @@ const lib = openLib('https://s3.example.com/birds')
 const about = await lib.about()
 const feed = await lib.feed()
 
+// the application's own record of what it already has, keyed by bundle id — the package holds no state
+const stored = new Map<string, string>()
+
 for (const entry of pickBundles(feed, { age: 6, tags: ['songs'] })) {
   if (!needsBundle(entry, stored.get(entry.id))) continue
 
