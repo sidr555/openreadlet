@@ -48,8 +48,28 @@ export class LibError extends Error {
 }
 
 /**
+ * Strips userinfo (`user:pass@`) from between the scheme and the host of an
+ * address, leaving everything else — including its encoding — untouched.
+ * Works on the raw string rather than through `URL`, so it applies equally
+ * to addresses that fail to parse: the authority section, if present, is
+ * structural (`scheme://...@host`), not something that needs decoding to
+ * find.
+ */
+function stripUserinfo(raw: string): string {
+  return raw.replace(/^([a-zA-Z][a-zA-Z\d+\-.]*:\/\/)[^/?#]*@/, '$1')
+}
+
+/**
  * Replaces the value of a query parameter with `***`. A token passed in the
  * query string would otherwise reach the application log through the error.
+ * Userinfo (`user:pass@`) is stripped unconditionally, whether or not a
+ * parameter name is given, so the output never carries credentials
+ * regardless of what it was given.
+ *
+ * A secret placed in the URL **fragment** is not redacted — deliberately:
+ * a fragment is never sent to a server and never appears in an address this
+ * package builds itself, so it can only come from a caller's own URL, passed
+ * in for redaction on its way to that caller's own log.
  *
  * Rewrites only the named parameter's value in the raw query string, leaving
  * the rest of the URL — path, other parameters, their encoding — byte for
@@ -61,23 +81,25 @@ export class LibError extends Error {
  * that there was nothing to redact.
  */
 export function redactUrl(url: string, secretParam?: string): string {
-  if (secretParam === undefined) return url
+  const address = stripUserinfo(url)
+
+  if (secretParam === undefined) return address
 
   let parsed: URL
 
   try {
-    parsed = new URL(url)
+    parsed = new URL(address)
   } catch {
     return '[redacted]'
   }
 
   try {
-    const hashIndex = url.indexOf('#')
-    const withoutHash = hashIndex === -1 ? url : url.slice(0, hashIndex)
-    const hash = hashIndex === -1 ? '' : url.slice(hashIndex)
+    const hashIndex = address.indexOf('#')
+    const withoutHash = hashIndex === -1 ? address : address.slice(0, hashIndex)
+    const hash = hashIndex === -1 ? '' : address.slice(hashIndex)
     const queryIndex = withoutHash.indexOf('?')
 
-    if (queryIndex === -1) return url
+    if (queryIndex === -1) return address
 
     const beforeQuery = withoutHash.slice(0, queryIndex)
     const query = withoutHash.slice(queryIndex + 1)
@@ -115,7 +137,7 @@ export function redactUrl(url: string, secretParam?: string): string {
       return `${parsed.origin}${parsed.pathname}?[redacted]`
     }
 
-    if (matches === 0) return url
+    if (matches === 0) return address
 
     return `${beforeQuery}?${redactedQuery}${hash}`
   } catch {

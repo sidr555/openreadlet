@@ -85,4 +85,22 @@ describe('redactUrl', () => {
 
     expect(redactUrl(url, 'token')).not.toContain('S3CRET')
   })
+
+  it('strips userinfo from the success path along with the redacted query secret', () => {
+    const url = 'https://user:P4SS@h/f.json?token=S3CRET'
+
+    expect(redactUrl(url, 'token')).toBe('https://h/f.json?token=***')
+  })
+
+  it('strips userinfo even when no query parameter is named', () => {
+    const url = 'https://user:P4SS@h/f.json'
+
+    expect(redactUrl(url)).toBe('https://h/f.json')
+  })
+
+  it('strips userinfo when no secret parameter matches anything in the query', () => {
+    const url = 'https://user:P4SS@h/f.json?other=1'
+
+    expect(redactUrl(url, 'token')).not.toContain('P4SS')
+  })
 })

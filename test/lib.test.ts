@@ -172,6 +172,20 @@ describe('fetchLibs', () => {
     }
   })
 
+  it('does not leak a password through a non-special scheme (missing "https://")', async () => {
+    const doFetch = serve({})
+
+    try {
+      await fetchLibs('admin:hunter2@libs.example.com/birds', { fetch: doFetch })
+      expect.unreachable('fetchLibs must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBeUndefined()
+      expect((error as LibError).message).not.toContain('hunter2')
+    }
+    expect(doFetch).not.toHaveBeenCalled()
+  })
+
   it('accepts a catalogue address carrying a query string', async () => {
     const withQuery = `${CATALOGUE}?v=2`
     const doFetch = serve({ [withQuery]: example('libs.json') })

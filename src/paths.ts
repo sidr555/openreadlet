@@ -2,6 +2,20 @@ import { LibError } from './errors.js'
 import { assertId } from './ids.js'
 
 /**
+ * The `${origin}${pathname}` rendering is only safe for a special scheme
+ * (`https:` and friends), where the parser splits userinfo, host and path
+ * into their own fields. For an opaque scheme — anything `URL` does not
+ * recognise as special, including the `user:` a bare `user:pass@host/path`
+ * parses as when a caller forgets the `https://` prefix — `origin` is the
+ * literal string `"null"` and everything else, credentials included, has
+ * landed in `pathname`. There is no safe rendering to fall back to in that
+ * case, so callers must omit the `url` field entirely rather than guess one.
+ */
+function safeAddress(parsed: URL): string | undefined {
+  return parsed.origin === 'null' ? undefined : `${parsed.origin}${parsed.pathname}`
+}
+
+/**
  * Refuses anything that is not a plain `https` URL: wrong scheme, or
  * credentials embedded in the address. This is the one check every address
  * handed to storage must pass — a catalogue, a base, a ref or a link in a
@@ -16,21 +30,22 @@ export function assertHttps(url: string): URL {
   } catch {
     // Not parseable at all — there is no safe rendering to fall back to, and
     // guessing one risks echoing back whatever credentials the caller typed.
-    // Drop the `url` field rather than report anything.
-    throw new LibError('insecure-origin', `Address ${JSON.stringify(url)} is not a URL`)
+    // Drop the `url` field, and do not put the raw address in the message
+    // either — a message reaches a log as readily as a field.
+    throw new LibError('insecure-origin', 'Address is not a URL')
   }
 
-  const safe = `${parsed.origin}${parsed.pathname}`
+  const safe = safeAddress(parsed)
 
   if (parsed.protocol !== 'https:') {
     throw new LibError('insecure-origin', `Address must use https, got ${parsed.protocol}`, {
-      url: safe,
+      ...(safe === undefined ? {} : { url: safe }),
     })
   }
 
   if (parsed.username || parsed.password) {
     throw new LibError('insecure-origin', 'Address must not carry credentials', {
-      url: safe,
+      ...(safe === undefined ? {} : { url: safe }),
     })
   }
 
@@ -48,16 +63,17 @@ export function assertHttps(url: string): URL {
  */
 export function resolveBase(base: string): string {
   const parsed = assertHttps(base)
+  const safe = safeAddress(parsed)
 
   if (parsed.search) {
     throw new LibError('insecure-origin', 'Base address must not carry a query string', {
-      url: base,
+      ...(safe === undefined ? {} : { url: safe }),
     })
   }
 
   if (parsed.hash) {
     throw new LibError('insecure-origin', 'Base address must not carry a fragment', {
-      url: base,
+      ...(safe === undefined ? {} : { url: safe }),
     })
   }
 

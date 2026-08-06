@@ -66,6 +66,26 @@ describe('resolveBase', () => {
       expect((error as LibError).url).not.toContain('pass')
     }
   })
+
+  it('reports the safe form, not the raw base, when refusing a query string', () => {
+    try {
+      resolveBase('https://b.example.com/lib?X-Amz-Signature=DEADBEEFSIG&X-Amz-Credential=AKIA')
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).url).toBe('https://b.example.com/lib')
+      expect((error as LibError).message).not.toContain('DEADBEEFSIG')
+    }
+  })
+
+  it('reports the safe form, not the raw base, when refusing a fragment', () => {
+    try {
+      resolveBase(`${BASE}#s3cr3t-section`)
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).url).toBe(BASE)
+      expect((error as LibError).message).not.toContain('s3cr3t-section')
+    }
+  })
 })
 
 describe('assertHttps', () => {
@@ -125,7 +145,28 @@ describe('assertHttps', () => {
     } catch (error) {
       expect((error as LibError).code).toBe('insecure-origin')
       expect((error as LibError).url).toBeUndefined()
-      expect((error as LibError).message).toContain('s3.example.com/birds')
+      expect((error as LibError).message).not.toContain('s3.example.com/birds')
+    }
+  })
+
+  it('does not echo the password when a non-special scheme puts it in the pathname', () => {
+    try {
+      assertHttps('admin:hunter2@libs.example.com/birds')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBeUndefined()
+      expect((error as LibError).message).not.toContain('hunter2')
+    }
+  })
+
+  it('never puts the raw address into the thrown message', () => {
+    try {
+      assertHttps('https://user:P4SS@')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).message).not.toContain('P4SS')
+      expect((error as LibError).message).not.toContain('https://user:P4SS@')
     }
   })
 })
