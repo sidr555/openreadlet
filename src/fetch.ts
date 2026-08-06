@@ -220,6 +220,10 @@ const request = async (
       })
     }
 
+    // A custom `fetch` that returns a synthetic `Response` (as tests here do)
+    // may leave `url` at its default of `''` — there is no landing address to
+    // compare, so the redirect check below cannot fire for it. A real fetch
+    // in a browser always sets `response.url`, redirected or not.
     const landed = response.url === '' ? target : response.url
 
     if (new URL(landed).origin !== new URL(target).origin) {

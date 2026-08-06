@@ -1,5 +1,7 @@
+import { SUPPORTED } from './version.js'
+
 /** The protocol version this package implements. */
-export const PROTOCOL_VERSION = '1.0'
+export const PROTOCOL_VERSION = `${SUPPORTED.major}.${SUPPORTED.minor}`
 
 export { LibError, redactUrl } from './errors.js'
 export type { LibErrorCode, LibErrorInfo } from './errors.js'

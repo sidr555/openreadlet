@@ -1,8 +1,8 @@
 # The reference adapter
 
 `@openreadlet/lib` is the package that knows how to talk to a lib: build an address, fetch
-a document, validate it against a schema and return a typed result. It does nothing else,
-and that is the main thing to know about it.
+a document, validate it with hand-written checks and return a typed result. It does nothing
+else, and that is the main thing to know about it.
 
 **The package is not published yet.** This document records the boundary agreed on before
 the work started, so that it does not drift afterwards.
@@ -27,9 +27,12 @@ boundary, and a boundary belongs in exactly one place.
 **Fetching.** An HTTP request with a timeout and an `AbortSignal`, a cap on response size,
 refusal to follow a redirect to another origin, refusal to speak `http`.
 
-**Validation.** Schema-checked parsing of the five documents with a legible rejection:
-which document, which field, what is wrong. Casting through `as` is not allowed — this
-data comes from strangers.
+**Validation.** Hand-written, schema-library-free parsing of the five documents with a
+legible rejection: which document, which field, what is wrong. Casting through `as` is not
+allowed — this data comes from strangers. A tag outside the `id` character set is a format
+error (`bad-id`) and refuses the document; a tag that is well-formed but missing from
+`about.json`'s dictionary is a different case entirely — it is allowed, per the
+specification, and must not sink the document.
 
 **Types.** The shapes of `About`, `Feed`, `Bundle`, `Test`, `Libs` and the readlet entry.
 There is no schema the type and the parser are both generated from: the type is a plain
@@ -81,6 +84,13 @@ three groups — did not arrive (`network-failed`, `timeout`, `insecure-origin`,
 `unsupported-version`, `bad-id`, `duplicate-id`). `cors-blocked` and `network-failed` are
 kept apart because a browser reports both as the same `TypeError`; telling them apart takes
 a second, `no-cors` probe once the first request has failed.
+
+**One exception is not a `LibError`.** Passing `signal` to a call and aborting it mid-flight
+surfaces the caller's own abort, not a `LibError` with a code — an `AbortController` must
+behave the way it behaves everywhere else in the platform, and wrapping it would hide that
+the abort was the caller's own doing. Code that branches on `error.code` should check
+`error instanceof LibError` first, or check `error.name === 'AbortError'` for the one case
+that is not.
 
 Reading a lib that is not open to the world is a setting, `auth`, passed once to `openLib`:
 basic credentials, a bearer token, or a token appended as a query parameter. The document

@@ -54,6 +54,11 @@ The package fetches, validates and selects. Storage, scheduling, subscription st
 and rendering stay with the application; the readlet text is returned as a raw
 string, and sanitising it belongs where it is rendered.
 
+Every failure — a bad response, a document that fails validation — is a `LibError`
+carrying a stable `code` your code can branch on. The one exception: aborting a call
+through its own `signal` surfaces the caller's own `AbortError` unwrapped, the way an
+`AbortController` behaves everywhere else.
+
 Reading a lib that is not public:
 
 ```ts
@@ -64,6 +69,10 @@ openLib('https://libs.example.com/private', {
 
 Requirements for whoever publishes a lib, and ready-made storage configuration,
 are in [doc/protocol.md](doc/protocol.md).
+
+The top-level `picUrl(base, id)` builds a cover address without an open `Lib` and without
+touching the network — handy for a dashboard that only needs `<img>` sources; `lib.picUrl(id)`
+is the same address, built from a lib already open.
 
 ## License
 

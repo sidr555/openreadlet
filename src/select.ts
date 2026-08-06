@@ -53,7 +53,12 @@ export function needsContent(
   return Date.parse(readlet.updated ?? bundleUpdated) > Date.parse(storedUpdated)
 }
 
-/** A readlet that has disappeared from every bundle is treated as deleted. */
+/**
+ * A readlet that has disappeared from every bundle is treated as deleted. Pass
+ * every bundle the reader holds, not the output of `pickBundles` — a bundle
+ * filtered out by age or tags is not one the reader has stopped holding, and
+ * passing only the selected subset reports its readlets as deleted too.
+ */
 export function staleReadlets(storedIds: string[], bundles: Bundle[]): string[] {
   const live = new Set(bundles.flatMap((bundle) => bundle.readlets.map((entry) => entry.id)))
 

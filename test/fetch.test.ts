@@ -154,6 +154,23 @@ describe('fetchJson', () => {
 
     expect(doFetch).not.toHaveBeenCalled()
   })
+
+  it('surfaces the caller abort as its own error mid-flight, not a LibError', async () => {
+    const controller = new AbortController()
+    const doFetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('This operation was aborted', 'AbortError'))
+          })
+        }),
+    )
+
+    const promise = fetchJson(URL_FEED, 5_000_000, { fetch: doFetch, signal: controller.signal })
+    controller.abort()
+
+    await expect(promise).rejects.toMatchObject({ name: 'AbortError' })
+  })
 })
 
 describe('authentication', () => {
