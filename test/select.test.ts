@@ -107,6 +107,20 @@ describe('needsBundle and needsContent', () => {
   it('falls back to the bundle updated when the readlet has none', () => {
     expect(needsContent(entry(), '2026-06-17T01:45:02Z', '2026-06-18T00:00:00Z')).toBe(false)
   })
+
+  it('downloads when the stored bundle date is unparsable', () => {
+    expect(needsBundle(feedEntry, 'yesterday')).toBe(true)
+  })
+
+  it('downloads when the stored content date is unparsable, without readlet updated', () => {
+    expect(needsContent(entry(), '2026-06-17T01:45:02Z', 'invalid')).toBe(true)
+  })
+
+  it('downloads when the stored content date is unparsable, with readlet updated', () => {
+    const readlet = entry({ updated: '2026-06-20T08:10:00Z' })
+
+    expect(needsContent(readlet, '2026-06-17T01:45:02Z', 'yesterday')).toBe(true)
+  })
 })
 
 describe('staleReadlets', () => {

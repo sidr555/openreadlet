@@ -1,5 +1,10 @@
 import type { Age, Bundle, Feed, FeedEntry, ReadletEntry } from './types.js'
 
+/** Unparsable date timestamps are treated as missing — download the content. */
+function isValidStoredDate(timestamp: string): boolean {
+  return !Number.isNaN(Date.parse(timestamp))
+}
+
 /** The reader age is matched against the bundle age, never against the lib age. */
 export function matchesAge(age: Age, readerAge?: number): boolean {
   if (readerAge === undefined) return true
@@ -32,6 +37,7 @@ export function pickBundles(
 
 export function needsBundle(entry: FeedEntry, storedUpdated?: string): boolean {
   if (storedUpdated === undefined) return true
+  if (!isValidStoredDate(storedUpdated)) return true
 
   return Date.parse(entry.updated) > Date.parse(storedUpdated)
 }
@@ -42,6 +48,7 @@ export function needsContent(
   storedUpdated?: string,
 ): boolean {
   if (storedUpdated === undefined) return true
+  if (!isValidStoredDate(storedUpdated)) return true
 
   return Date.parse(readlet.updated ?? bundleUpdated) > Date.parse(storedUpdated)
 }
