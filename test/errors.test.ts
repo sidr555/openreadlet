@@ -103,4 +103,31 @@ describe('redactUrl', () => {
 
     expect(redactUrl(url, 'token')).not.toContain('P4SS')
   })
+
+  it('fails closed on an opaque address the userinfo regex cannot touch', () => {
+    // No `://`, so the userinfo strip's structural regex never matches, and
+    // the credential rides straight through unless the shape itself is
+    // refused.
+    expect(redactUrl('user:pass@h/p')).not.toContain('pass')
+  })
+
+  it('fails closed on a scheme-relative address', () => {
+    expect(redactUrl('//user:P4SS@h/p')).not.toContain('P4SS')
+  })
+
+  it('fails closed on a mailto address', () => {
+    expect(redactUrl('mailto:hunter2@x.com')).not.toContain('hunter2')
+  })
+
+  it('leaves a well-formed https address without a named parameter unchanged', () => {
+    const url = 'https://s3.example.com/birds/feed.json'
+
+    expect(redactUrl(url)).toBe(url)
+  })
+
+  it('leaves a well-formed https address with a named parameter unchanged in behaviour', () => {
+    const url = 'https://libs.example.com/private/feed.json?token=s3cr3t'
+
+    expect(redactUrl(url, 'token')).toBe('https://libs.example.com/private/feed.json?token=***')
+  })
 })

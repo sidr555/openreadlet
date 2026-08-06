@@ -32,22 +32,64 @@ const encodeBasic = (user: string, password: string): string => {
   return btoa(String.fromCharCode(...bytes))
 }
 
+/**
+ * Builds the `url` recorded on every error this module raises: strips
+ * userinfo and masks the value of *every* query parameter, keeping the
+ * parameter names — they are not secret, and are what makes an error
+ * debuggable. Applied to the address as accepted, not only to one being
+ * refused: a catalogue legitimately lives at an arbitrary address
+ * (`fetchLibs` accepts a query string on purpose), so a presigned URL is a
+ * supported input, and its signature must not ride into every later error
+ * the way it would if only the auth-supplied parameter were masked.
+ *
+ * Deliberately not `redactUrl`: that helper preserves the caller's raw
+ * encoding for a single named parameter, which is the wrong shape here —
+ * every parameter needs masking, not one. `url` always parses by the time
+ * it reaches `prepare()` (it is either the caller's own address, already
+ * validated by `assertHttps`/`resolveBase`, or one this module just built
+ * with `URLSearchParams`), but `redactUrl` is still the fallback if that
+ * ever stops being true, rather than let an unparseable address through
+ * unmasked.
+ */
+const buildSafeUrl = (url: string): string => {
+  let parsed: URL
+
+  try {
+    parsed = new URL(url)
+  } catch {
+    return redactUrl(url)
+  }
+
+  parsed.username = ''
+  parsed.password = ''
+
+  const masked = new URLSearchParams()
+
+  for (const key of parsed.searchParams.keys()) {
+    masked.append(key, '***')
+  }
+
+  parsed.search = masked.toString()
+
+  return parsed.href
+}
+
 const prepare = (url: string, options: RequestOptions): Prepared => {
   const headers = { ...(options.headers ?? {}) }
   const auth = options.auth
 
-  if (!auth) return { target: url, safeUrl: url, headers }
+  if (!auth) return { target: url, safeUrl: buildSafeUrl(url), headers }
 
   if (auth.type === 'basic') {
     headers['Authorization'] = `Basic ${encodeBasic(auth.user, auth.password)}`
 
-    return { target: url, safeUrl: url, headers }
+    return { target: url, safeUrl: buildSafeUrl(url), headers }
   }
 
   if (auth.type === 'bearer') {
     headers['Authorization'] = `Bearer ${auth.token}`
 
-    return { target: url, safeUrl: url, headers }
+    return { target: url, safeUrl: buildSafeUrl(url), headers }
   }
 
   if (auth.name === '') {
@@ -59,7 +101,7 @@ const prepare = (url: string, options: RequestOptions): Prepared => {
 
   return {
     target: withToken.href,
-    safeUrl: redactUrl(withToken.href, auth.name),
+    safeUrl: buildSafeUrl(withToken.href),
     headers,
   }
 }

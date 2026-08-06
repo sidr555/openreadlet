@@ -261,6 +261,72 @@ describe('authentication', () => {
   })
 })
 
+describe('a presigned address is accepted input, not only refused input', () => {
+  const PRESIGNED =
+    'https://libs.example.com/catalogue.json?X-Amz-Signature=DEADBEEFSIG&X-Amz-Credential=AKIA'
+
+  it('masks the signature on a plain request with no auth option', async () => {
+    const doFetch = vi.fn(async () => respond('', { status: 404, url: PRESIGNED }))
+
+    try {
+      await fetchJson(PRESIGNED, 5_000_000, { fetch: doFetch })
+      expect.unreachable('fetchJson must throw')
+    } catch (error) {
+      expect((error as LibError).url).toContain('X-Amz-Signature=***')
+      expect((error as LibError).url).toContain('X-Amz-Credential=***')
+      expect((error as LibError).url).not.toContain('DEADBEEFSIG')
+      expect((error as LibError).url).not.toContain('AKIA')
+    }
+  })
+
+  it('masks the signature under basic auth', async () => {
+    const doFetch = vi.fn(async () => respond('', { status: 404, url: PRESIGNED }))
+
+    try {
+      await fetchJson(PRESIGNED, 5_000_000, {
+        fetch: doFetch,
+        auth: { type: 'basic', user: 'reader', password: 'open sesame' },
+      })
+      expect.unreachable('fetchJson must throw')
+    } catch (error) {
+      expect((error as LibError).url).toContain('X-Amz-Signature=***')
+      expect((error as LibError).url).not.toContain('DEADBEEFSIG')
+    }
+  })
+
+  it('masks the signature under bearer auth', async () => {
+    const doFetch = vi.fn(async () => respond('', { status: 404, url: PRESIGNED }))
+
+    try {
+      await fetchJson(PRESIGNED, 5_000_000, {
+        fetch: doFetch,
+        auth: { type: 'bearer', token: 'abc' },
+      })
+      expect.unreachable('fetchJson must throw')
+    } catch (error) {
+      expect((error as LibError).url).toContain('X-Amz-Signature=***')
+      expect((error as LibError).url).not.toContain('DEADBEEFSIG')
+    }
+  })
+
+  it('masks both the signature and the appended token under query auth', async () => {
+    const doFetch = vi.fn(async () => respond('', { status: 404, url: PRESIGNED }))
+
+    try {
+      await fetchJson(PRESIGNED, 5_000_000, {
+        fetch: doFetch,
+        auth: { type: 'query', name: 'token', value: 's3cr3t' },
+      })
+      expect.unreachable('fetchJson must throw')
+    } catch (error) {
+      expect((error as LibError).url).toContain('X-Amz-Signature=***')
+      expect((error as LibError).url).toContain('token=***')
+      expect((error as LibError).url).not.toContain('DEADBEEFSIG')
+      expect((error as LibError).url).not.toContain('s3cr3t')
+    }
+  })
+})
+
 describe('fetchText and fetchBlob', () => {
   it('returns markdown untouched', async () => {
     const doFetch = vi.fn(async () => respond('# Who sings\n\nAt dawn.\n'))

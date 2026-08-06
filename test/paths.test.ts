@@ -169,6 +169,62 @@ describe('assertHttps', () => {
       expect((error as LibError).message).not.toContain('https://user:P4SS@')
     }
   })
+
+  it('rejects a blob address without leaking the inner url it wraps', () => {
+    // URL gives a blob: address the inner URL's origin while leaving the
+    // whole inner URL - userinfo included - in pathname. The allowlist must
+    // refuse this by scheme, not by trying to render it.
+    try {
+      assertHttps('blob:https://user:P4SS@h.example.com/x')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBeUndefined()
+      expect((error as LibError).message).not.toContain('P4SS')
+      expect((error as LibError).message).not.toContain('h.example.com')
+    }
+  })
+
+  it('rejects a file address without leaking the path', () => {
+    try {
+      assertHttps('file:///etc/passwd')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBeUndefined()
+      expect((error as LibError).message).not.toContain('/etc/passwd')
+    }
+  })
+
+  it('still renders an ftp address with credentials stripped', () => {
+    try {
+      assertHttps('ftp://user:P4SS@h/p')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+      expect((error as LibError).url).toBe('ftp://h/p')
+      expect((error as LibError).message).not.toContain('P4SS')
+    }
+  })
+
+  it('still renders an https address with a query string when refusing embedded credentials', () => {
+    try {
+      assertHttps('https://user:pass@h/lib?sig=X')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).url).toBe('https://h/lib')
+      expect((error as LibError).message).not.toContain('sig=X')
+    }
+  })
+
+  it('names the field the address came from when refusing it', () => {
+    try {
+      assertHttps('s3.example.com/birds', 'libs[3].url')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).field).toBe('libs[3].url')
+    }
+  })
 })
 
 describe('document addresses', () => {

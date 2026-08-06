@@ -90,6 +90,44 @@ describe('documents that must be refused', () => {
 
     expect(codeOf(() => parseLibs(libs))).toBe('insecure-origin')
   })
+
+  it('names the index of a bad ref in a catalogue of refs', () => {
+    const about = {
+      ver: '1.0',
+      title: 'Backyard Birds',
+      refs: [
+        { title: 'Fine', url: 'https://s3.example.com/fine' },
+        { title: 'Evil', url: 'javascript:alert(1)' },
+      ],
+    }
+
+    try {
+      parseAbout(about)
+      expect.unreachable('parseAbout must throw')
+    } catch (error) {
+      expect((error as LibError).field).toBe('refs[1].url')
+    }
+  })
+
+  it('names the index of a bad entry in a fifty-entry catalogue', () => {
+    const libs = {
+      ver: '1.0',
+      libs: [
+        ...Array.from({ length: 49 }, (_unused, index) => ({
+          title: `Fine ${index}`,
+          url: `https://s3.example.com/fine-${index}`,
+        })),
+        { title: 'Evil', url: 'http://s3.example.com/birds' },
+      ],
+    }
+
+    try {
+      parseLibs(libs)
+      expect.unreachable('parseLibs must throw')
+    } catch (error) {
+      expect((error as LibError).field).toBe('libs[49].url')
+    }
+  })
 })
 
 describe('documents that must be accepted', () => {
