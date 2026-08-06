@@ -31,7 +31,25 @@ describe('redactUrl', () => {
     expect(redactUrl(url)).toBe(url)
   })
 
-  it('returns the input as-is when it is not a URL', () => {
-    expect(redactUrl('not a url', 'token')).toBe('not a url')
+  it('fails closed when the address is not a URL', () => {
+    expect(redactUrl('not a url', 'token')).toBe('[redacted]')
+  })
+
+  it('does not leak the secret when the url has a malformed percent-escape', () => {
+    const url = 'https://h/a%zz/f.json?token=s3cr3t'
+
+    expect(redactUrl(url, 'token')).not.toContain('s3cr3t')
+  })
+
+  it('keeps an encoded slash in the path untouched', () => {
+    const url = 'https://h/a%2Fb/f.json?token=s3cr3t'
+
+    expect(redactUrl(url, 'token')).toBe('https://h/a%2Fb/f.json?token=***')
+  })
+
+  it('keeps the encoding of another query parameter untouched', () => {
+    const url = 'https://h/f.json?q=hello%20world&token=s3cr3t'
+
+    expect(redactUrl(url, 'token')).toBe('https://h/f.json?q=hello%20world&token=***')
   })
 })

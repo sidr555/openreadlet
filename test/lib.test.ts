@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import type { LibError } from '../src/errors.js'
-import { openLib } from '../src/lib.js'
+import { fetchLibs, openLib } from '../src/lib.js'
 
 const BASE = 'https://s3.example.com/birds'
 
@@ -10,7 +10,7 @@ const example = (name: string): string =>
   readFileSync(fileURLToPath(new URL(`../examples/${name}`, import.meta.url)), 'utf8')
 
 const serve = (byUrl: Record<string, string>) =>
-  vi.fn(async (input: RequestInfo | URL) => {
+  vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
     const url = String(input)
     const body = byUrl[url]
 
@@ -80,5 +80,69 @@ describe('openLib', () => {
     const lib = openLib(BASE, { fetch: doFetch, maxTextBytes: 1024 })
 
     await expect(lib.text('dawn-song')).rejects.toMatchObject({ code: 'too-large' })
+  })
+
+  it('reads the feed', async () => {
+    const doFetch = serve({ [`${BASE}/feed.json`]: example('feed.json') })
+    const lib = openLib(BASE, { fetch: doFetch })
+
+    await expect(lib.feed()).resolves.toMatchObject({ ver: { major: 1, minor: 0 } })
+  })
+
+  it('reads a quiz', async () => {
+    const doFetch = serve({ [`${BASE}/test/dawn-song.json`]: example('test.json') })
+    const lib = openLib(BASE, { fetch: doFetch })
+
+    await expect(lib.test('dawn-song')).resolves.toMatchObject({ timer: '3m' })
+  })
+
+  it('reads the cover as a blob', async () => {
+    const doFetch = vi.fn(async () => {
+      const response = new Response('binary-bytes', {
+        headers: { 'content-type': 'image/webp' },
+      })
+      Object.defineProperty(response, 'url', { value: `${BASE}/pic/dawn-song.webp` })
+
+      return response
+    })
+    const lib = openLib(BASE, { fetch: doFetch })
+
+    const blob = await lib.pic('dawn-song')
+
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('image/webp')
+    expect(blob.size).toBeGreaterThan(0)
+  })
+
+  it('passes the per-call signal through to the underlying fetch', async () => {
+    const doFetch = serve({ [`${BASE}/about.json`]: example('about.json') })
+    const lib = openLib(BASE, { fetch: doFetch })
+    const controller = new AbortController()
+
+    await lib.about({ signal: controller.signal })
+
+    const init = doFetch.mock.calls[0]?.[1] as RequestInit
+    expect(init.signal).toBeInstanceOf(AbortSignal)
+  })
+})
+
+describe('fetchLibs', () => {
+  const CATALOGUE = 'https://libs.example.com/catalogue.json'
+
+  it('reads a catalogue from an arbitrary address', async () => {
+    const doFetch = serve({ [CATALOGUE]: example('libs.json') })
+
+    await expect(fetchLibs(CATALOGUE, { fetch: doFetch })).resolves.toMatchObject({
+      ver: { major: 1, minor: 0 },
+    })
+  })
+
+  it('refuses an http catalogue address before any request', async () => {
+    const doFetch = serve({})
+
+    await expect(
+      fetchLibs('http://libs.example.com/catalogue.json', { fetch: doFetch }),
+    ).rejects.toMatchObject({ code: 'insecure-origin' })
+    expect(doFetch).not.toHaveBeenCalled()
   })
 })

@@ -117,6 +117,24 @@ describe('fetchJson', () => {
     )
   })
 
+  it('reports timeout instead of hanging when the cors probe never settles', async () => {
+    const doFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.mode === 'no-cors') {
+        return new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'))
+          })
+        })
+      }
+
+      return Promise.reject(new TypeError('Failed to fetch'))
+    })
+
+    expect(
+      await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch, timeout: 50 })),
+    ).toBe('timeout')
+  })
+
   it('reports network-failed when nothing answers at all', async () => {
     const doFetch = vi.fn(async () => {
       throw new TypeError('Failed to fetch')

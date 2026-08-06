@@ -1,3 +1,4 @@
+import { assertHttps } from '../paths.js'
 import type { CatalogueEntry, Libs } from '../types.js'
 import { assertSupported } from '../version.js'
 import { asAge, asArray, asObject, asString, optionalString } from './primitives.js'
@@ -5,10 +6,12 @@ import { asAge, asArray, asObject, asString, optionalString } from './primitives
 const parseCatalogueEntry = (raw: unknown, field: string): CatalogueEntry => {
   const source = asObject(raw, field)
   const about = optionalString(source['about'], `${field}.about`, 500)
+  const url = asString(source['url'], `${field}.url`)
+  assertHttps(url)
 
   return {
     title: asString(source['title'], `${field}.title`, 120),
-    url: asString(source['url'], `${field}.url`),
+    url,
     age: asAge(source['age'], `${field}.age`),
     ...(about === undefined ? {} : { about }),
   }

@@ -71,6 +71,25 @@ describe('documents that must be refused', () => {
   ])('feed %s fails with %s', (file, code) => {
     expect(codeOf(() => parseFeed(load(`./fixtures/broken/${file}`)))).toBe(code)
   })
+
+  it('refuses a ref that is not https', () => {
+    const about = {
+      ver: '1.0',
+      title: 'Backyard Birds',
+      refs: [{ title: 'Evil', url: 'javascript:alert(1)' }],
+    }
+
+    expect(codeOf(() => parseAbout(about))).toBe('insecure-origin')
+  })
+
+  it('refuses a catalogue entry that is not https', () => {
+    const libs = {
+      ver: '1.0',
+      libs: [{ title: 'Backyard Birds', url: 'http://s3.example.com/birds' }],
+    }
+
+    expect(codeOf(() => parseLibs(libs))).toBe('insecure-origin')
+  })
 })
 
 describe('documents that must be accepted', () => {

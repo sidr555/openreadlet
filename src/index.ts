@@ -7,6 +7,7 @@ export type { LibErrorCode, LibErrorInfo } from './errors.js'
 export { isValidId } from './ids.js'
 export {
   aboutUrl,
+  assertHttps,
   bundleUrl,
   feedUrl,
   picUrl,

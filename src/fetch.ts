@@ -65,13 +65,18 @@ const prepare = (url: string, options: RequestOptions): Prepared => {
  * network are the same TypeError. A no-cors probe tells them apart — an opaque
  * response means the server answered and it is the missing
  * Access-Control-Allow-Origin that stopped us.
+ *
+ * Takes the same signal as the request it is diagnosing, so the request's own
+ * timeout aborts the probe too — otherwise a probe with nothing watching it
+ * can hang long past the caller's `timeout`.
  */
 const looksBlocked = async (
   target: string,
   doFetch: typeof globalThis.fetch,
+  signal: AbortSignal,
 ): Promise<boolean> => {
   try {
-    await doFetch(target, { mode: 'no-cors', redirect: 'follow', credentials: 'omit' })
+    await doFetch(target, { mode: 'no-cors', redirect: 'follow', credentials: 'omit', signal })
 
     return true
   } catch {
@@ -190,7 +195,18 @@ const request = async (
 
       if (options.signal?.aborted) throw error
 
-      if (await looksBlocked(target, doFetch)) {
+      const blocked = await looksBlocked(target, doFetch, controller.signal)
+
+      // The shared timer can fire while the probe above is in flight; a
+      // timeout that struck mid-probe is still a timeout, not a cors verdict.
+      if (timedOut) {
+        throw new LibError('timeout', `No response within ${options.timeout ?? DEFAULT_TIMEOUT} ms`, {
+          url: safeUrl,
+          cause: error,
+        })
+      }
+
+      if (blocked) {
         throw new LibError(
           'cors-blocked',
           'The storage answered but did not allow reading it from a browser: no Access-Control-Allow-Origin',

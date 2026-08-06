@@ -50,16 +50,58 @@ export class LibError extends Error {
 /**
  * Replaces the value of a query parameter with `***`. A token passed in the
  * query string would otherwise reach the application log through the error.
+ *
+ * Rewrites only the named parameter's value in the raw query string, leaving
+ * the rest of the URL — path, other parameters, their encoding — byte for
+ * byte as given. Round-tripping through `URLSearchParams` would decode and
+ * re-encode everything, which both changes the address reported in the error
+ * and lets a malformed percent-escape throw past the redaction. On any
+ * failure this fails closed: it never returns the input once a secret
+ * parameter name has been given, because a failure to redact is not evidence
+ * that there was nothing to redact.
  */
 export function redactUrl(url: string, secretParam?: string): string {
   if (!secretParam) return url
 
+  let parsed: URL
+
   try {
-    const parsed = new URL(url)
-    if (!parsed.searchParams.has(secretParam)) return url
-    parsed.searchParams.set(secretParam, '***')
-    return decodeURIComponent(parsed.href)
+    parsed = new URL(url)
   } catch {
-    return url
+    return '[redacted]'
+  }
+
+  try {
+    const hashIndex = url.indexOf('#')
+    const withoutHash = hashIndex === -1 ? url : url.slice(0, hashIndex)
+    const hash = hashIndex === -1 ? '' : url.slice(hashIndex)
+    const queryIndex = withoutHash.indexOf('?')
+
+    if (queryIndex === -1) return url
+
+    const beforeQuery = withoutHash.slice(0, queryIndex)
+    const query = withoutHash.slice(queryIndex + 1)
+    const encodedName = encodeURIComponent(secretParam)
+    let found = false
+
+    const redactedQuery = query
+      .split('&')
+      .map((pair) => {
+        const eqIndex = pair.indexOf('=')
+        const key = eqIndex === -1 ? pair : pair.slice(0, eqIndex)
+
+        if (key !== encodedName) return pair
+
+        found = true
+
+        return `${key}=***`
+      })
+      .join('&')
+
+    if (!found) return url
+
+    return `${beforeQuery}?${redactedQuery}${hash}`
+  } catch {
+    return `${parsed.origin}${parsed.pathname}?[redacted]`
   }
 }

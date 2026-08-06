@@ -1,4 +1,5 @@
 import { assertId } from '../ids.js'
+import { assertHttps } from '../paths.js'
 import type { About, LibRef, Tag } from '../types.js'
 import { assertSupported } from '../version.js'
 import { parseEntry } from './entry.js'
@@ -22,10 +23,12 @@ const parseTag = (raw: unknown, field: string): Tag => {
 
 const parseRef = (raw: unknown, field: string): LibRef => {
   const source = asObject(raw, field)
+  const url = asString(source['url'], `${field}.url`)
+  assertHttps(url)
 
   return {
     title: asString(source['title'], `${field}.title`, 120),
-    url: asString(source['url'], `${field}.url`),
+    url,
   }
 }
 

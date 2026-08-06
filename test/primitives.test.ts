@@ -7,6 +7,7 @@ import {
   asDate,
   asObject,
   asString,
+  asTagIds,
   assertUniqueIds,
 } from '../src/validate/primitives.js'
 
@@ -88,6 +89,21 @@ describe('asObject, asArray, asBoolean', () => {
 
   it.each([null, [], 'text'])('refuses %s as an object', (raw) => {
     expect(codeOf(() => asObject(raw, 'doc'))).toBe('schema-mismatch')
+  })
+})
+
+describe('asTagIds', () => {
+  it('reads tags drawn from the id character set', () => {
+    expect(asTagIds(['songs', 'watching-birds'], 'tags')).toEqual(['songs', 'watching-birds'])
+  })
+
+  it('treats absent and null as no tags', () => {
+    expect(asTagIds(undefined, 'tags')).toEqual([])
+    expect(asTagIds(null, 'tags')).toEqual([])
+  })
+
+  it.each(['../evil', '<script>', ''])('rejects %s as bad-id, not schema-mismatch', (raw) => {
+    expect(codeOf(() => asTagIds([raw], 'tags'))).toBe('bad-id')
   })
 })
 

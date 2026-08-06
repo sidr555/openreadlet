@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LibError } from '../src/errors.js'
 import {
   aboutUrl,
+  assertHttps,
   bundleUrl,
   feedUrl,
   picUrl,
@@ -28,6 +29,52 @@ describe('resolveBase', () => {
 
   it('rejects an address that is not a URL', () => {
     expect(() => resolveBase('s3.example.com/birds')).toThrowError(LibError)
+  })
+
+  it('rejects a base carrying a query string', () => {
+    try {
+      resolveBase(`${BASE}?x=1`)
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+    }
+  })
+
+  it('rejects a base carrying a fragment', () => {
+    try {
+      resolveBase(`${BASE}#section`)
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+    }
+  })
+
+  it('rejects a base carrying credentials', () => {
+    try {
+      resolveBase('https://user:pass@s3.example.com/birds')
+      expect.unreachable('resolveBase must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+    }
+  })
+})
+
+describe('assertHttps', () => {
+  it('returns the parsed URL for an https address', () => {
+    expect(assertHttps(BASE).origin).toBe('https://s3.example.com')
+  })
+
+  it('rejects http', () => {
+    try {
+      assertHttps('http://s3.example.com/birds')
+      expect.unreachable('assertHttps must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('insecure-origin')
+    }
+  })
+
+  it('rejects an address that is not a URL', () => {
+    expect(() => assertHttps('s3.example.com/birds')).toThrowError(LibError)
   })
 })
 

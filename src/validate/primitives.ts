@@ -1,4 +1,5 @@
 import { LibError } from '../errors.js'
+import { assertId } from '../ids.js'
 import type { Age } from '../types.js'
 
 const fail = (field: string, what: string): never => {
@@ -96,11 +97,17 @@ export function asAge(raw: unknown, field: string): Age {
   return { min, max }
 }
 
-/** Tags are identifiers; unknown ones are allowed and displayed as-is. */
+/**
+ * Tags are identifiers, drawn from the same character set as an `id` — a tag
+ * outside that set is a format error (`bad-id`), same as a malformed `id`
+ * anywhere else. That is a different thing from a tag that is well-formed but
+ * absent from `about.json`'s dictionary: an undeclared tag is still allowed
+ * and must not sink the document, and this check does not touch that case.
+ */
 export function asTagIds(raw: unknown, field: string): string[] {
   if (raw === undefined || raw === null) return []
 
-  return asArray(raw, field).map((value, index) => asString(value, `${field}[${index}]`, 64))
+  return asArray(raw, field).map((value, index) => assertId(value, `${field}[${index}]`))
 }
 
 export function assertUniqueIds(ids: string[], field: string): void {

@@ -1,6 +1,7 @@
 import { fetchBlob, fetchJson, fetchText, type RequestOptions } from './fetch.js'
 import {
   aboutUrl,
+  assertHttps,
   bundleUrl,
   feedUrl,
   picUrl as buildPicUrl,
@@ -94,5 +95,7 @@ export function openLib(base: string, options: LibOptions = {}): Lib {
  * so it is a function rather than a method.
  */
 export async function fetchLibs(url: string, options: LibOptions = {}): Promise<Libs> {
+  assertHttps(url)
+
   return parseLibs(await fetchJson(url, options.maxDocBytes ?? DEFAULT_DOC_BYTES, options))
 }
