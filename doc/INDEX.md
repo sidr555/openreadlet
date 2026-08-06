@@ -1,0 +1,23 @@
+# openreadlet documentation
+
+Added a file to `doc/`? Add it here too.
+
+## Protocol
+
+- [protocol.md](protocol.md) — the Lib specification, version 1: bucket layout, the five
+  documents, age and tags, updating, subscribing and QR, bucket and reader requirements,
+  compatibility rules
+- [../examples/](../examples/) — valid examples of all five documents, one lib throughout
+
+## Implementation
+
+- [adapter.md](adapter.md) — the boundaries of the reference adapter `@openreadlet/lib`:
+  what it does, what it does not, the shape of errors
+
+## Everything else
+
+| File | What is in it |
+|------|---------------|
+| `README.md` | what openreadlet is, how a lib is built, current status |
+| `LICENSE` | Apache License 2.0, verbatim |
+| `NOTICE` | copyright, as clause 4 of the licence requires |

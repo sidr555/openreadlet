@@ -1,0 +1,24 @@
+{
+  "ver": "1.0",
+  "title": "Example catalogue",
+  "libs": [
+    {
+      "title": "Backyard Birds",
+      "about": "Short field notes for early readers, written by a nine-year-old",
+      "age": [5, 7],
+      "url": "https://s3.example.com/birds"
+    },
+    {
+      "title": "Night Sky",
+      "about": "Where the constellations are and how to find them without a telescope",
+      "age": [7, 10],
+      "url": "https://s3.example.com/nightsky"
+    },
+    {
+      "title": "Garden Notes",
+      "about": "What grows on the windowsill and what it needs to keep growing",
+      "age": [7],
+      "url": "https://s3.example.com/garden"
+    }
+  ]
+}

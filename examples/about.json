@@ -1,0 +1,46 @@
+{
+  "ver": "1.0",
+  "title": "Backyard Birds",
+  "about": "Short field notes for early readers, written by a nine-year-old",
+  "author": "Anna Fields",
+  "contact": "anna@example.com",
+  "age": [5, 7],
+  "tags": [
+    { "id": "songs", "title": "Bird songs" },
+    { "id": "watching", "title": "Watching" }
+  ],
+  "readlets": [
+    {
+      "id": "dawn-song",
+      "title": "Who sings before sunrise",
+      "date": "2026-06-17T01:45:02Z",
+      "updated": "2026-06-20T08:10:00Z",
+      "tags": ["songs"],
+      "text": true,
+      "pic": true,
+      "test": true
+    },
+    {
+      "id": "woodpecker",
+      "title": "Tapping in the spruce wood",
+      "date": "2026-06-18T09:12:44Z",
+      "tags": ["watching", "songs"],
+      "text": true,
+      "pic": true,
+      "test": false
+    },
+    {
+      "id": "window-feeder",
+      "title": "A feeder outside the window",
+      "date": "2026-06-19T14:03:00Z",
+      "tags": ["watching"],
+      "text": true,
+      "pic": false,
+      "test": true
+    }
+  ],
+  "refs": [
+    { "title": "Night Sky", "url": "https://s3.example.com/nightsky" },
+    { "title": "Garden Notes", "url": "https://s3.example.com/garden" }
+  ]
+}

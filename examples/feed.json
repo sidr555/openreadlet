@@ -1,0 +1,21 @@
+{
+  "ver": "1.0",
+  "bundles": [
+    {
+      "id": "spring-2026",
+      "updated": "2026-06-20T08:10:00Z",
+      "age": [5, 7],
+      "tags": ["songs"]
+    },
+    {
+      "id": "watching-basics",
+      "updated": "2026-06-19T14:03:00Z",
+      "age": [5],
+      "tags": ["watching"]
+    },
+    {
+      "id": "archive",
+      "updated": "2026-02-01T09:00:00Z"
+    }
+  ]
+}

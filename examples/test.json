@@ -1,0 +1,73 @@
+{
+  "ver": "1.0",
+  "timer": "3m",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "true-false",
+      "question": "Does the thrush start singing before sunrise?",
+      "hint": "Look at the second paragraph",
+      "points": 1,
+      "answer": true
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "question": "Who wakes up first in the wood?",
+      "items": ["The woodpecker", "The thrush", "The owl", "The tit"],
+      "points": 1,
+      "answer": 1
+    },
+    {
+      "id": "q3",
+      "type": "multi-choice",
+      "question": "Which birds can you hear at dawn?",
+      "items": ["The thrush", "The chaffinch", "The owl", "The warbler"],
+      "points": 2,
+      "answer": [0, 1, 3]
+    },
+    {
+      "id": "q4",
+      "type": "order",
+      "question": "Put them in order of who started singing first",
+      "items": ["The chaffinch", "The thrush", "The warbler"],
+      "points": 2,
+      "answer": [1, 0, 2]
+    },
+    {
+      "id": "q5",
+      "type": "blocks",
+      "question": "Build the sentence",
+      "items": ["at dawn", "the thrush", "sings", "in the spruce wood"],
+      "points": 2,
+      "answer": [1, 2, 0, 3]
+    },
+    {
+      "id": "q6",
+      "type": "spot",
+      "question": "Mark the names of the birds",
+      "text": "The woodpecker taps on the pine while the thrush sings nearby",
+      "points": 2,
+      "answer": [1, 8]
+    },
+    {
+      "id": "q7",
+      "type": "fill",
+      "question": "The bird that taps on tree trunks is the ___",
+      "hint": "Ten letters",
+      "points": 1,
+      "answer": "woodpecker"
+    },
+    {
+      "id": "q8",
+      "type": "pairs",
+      "question": "Match each bird with what it does",
+      "points": 2,
+      "pairs": [
+        ["thrush", "sings at dawn"],
+        ["woodpecker", "taps on trunks"],
+        ["owl", "hunts at night"]
+      ]
+    }
+  ]
+}
