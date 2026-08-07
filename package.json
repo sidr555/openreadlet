@@ -1,6 +1,6 @@
 {
   "name": "@openreadlet/lib",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Reference adapter for the Lib protocol: address, fetch, validate and select readlets from a lib",
   "keywords": [
     "readlet",
