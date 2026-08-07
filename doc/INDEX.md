@@ -19,5 +19,6 @@ Added a file to `doc/`? Add it here too.
 | File | What is in it |
 |------|---------------|
 | `README.md` | what openreadlet is, how a lib is built, current status |
+| `CHANGELOG.md` | dated record of what shipped, per release |
 | `LICENSE` | Apache License 2.0, verbatim |
 | `NOTICE` | copyright, as clause 4 of the licence requires |

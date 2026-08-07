@@ -1,17 +1,11 @@
 # openreadlet
 
-An open protocol for distributing small units of reading content — **readlets** — from
-ordinary public S3 buckets, plus a reference adapter for reading them.
+An open protocol for distributing **readlets** — short texts for a single reading
+session — through public storage, and its reference reader.
 
-A readlet is a short text meant for a single reading session: an article, a story, a note.
-A collection of readlets is called a **lib**. A lib is a folder in a bucket holding
-manifests in a known format. Nothing more: no database, no server, no registration. Anyone
-can publish a lib and share a link or a QR code for it, and any reader that understands the
-protocol will subscribe and keep receiving updates.
-
-The point is that content and its updates live with the publisher rather than inside
-somebody's service. An application distributes only itself and knows how to read other
-people's libs.
+- [The Lib protocol, version 1](doc/protocol.md)
+- [The reference adapter](doc/adapter.md)
+- [Example documents](examples/)
 
 ## How a lib is built
 
@@ -28,19 +22,62 @@ A reader remembers `{base}` — that is the whole of a subscription. From there 
 the feed on its own, picks the bundles that match the reader's age and chosen tags, and
 pulls the readlets out of them.
 
-The full description is in [doc/protocol.md](doc/protocol.md). Valid examples of every
-document are in [examples/](examples/).
+## @openreadlet/lib
 
-## Status
+```bash
+npm install @openreadlet/lib
+```
 
-The version 1 specification is written. The reference adapter `@openreadlet/lib` is **not
-published yet** — it is being worked on; see [doc/adapter.md](doc/adapter.md) for what
-falls inside its boundaries and what stays with the application.
+```ts
+import { openLib, pickBundles, needsBundle } from '@openreadlet/lib'
 
-## Licence
+const lib = openLib('https://s3.example.com/birds')
 
-Apache License 2.0, covering both the code and the text of the specification. Full text in
-[LICENSE](LICENSE), copyright in [NOTICE](NOTICE).
+const about = await lib.about()
+const feed = await lib.feed()
+
+// the application's own record of what it already has, keyed by bundle id — the package holds no state
+const stored = new Map<string, string>()
+
+for (const entry of pickBundles(feed, { age: 6, tags: ['songs'] })) {
+  if (!needsBundle(entry, stored.get(entry.id))) continue
+
+  const bundle = await lib.bundle(entry.id)
+
+  for (const readlet of bundle.readlets) {
+    if (readlet.text) console.log(await lib.text(readlet.id))
+  }
+}
+```
+
+The package fetches, validates and selects. Storage, scheduling, subscription state
+and rendering stay with the application; the readlet text is returned as a raw
+string, and sanitising it belongs where it is rendered.
+
+Every failure — a bad response, a document that fails validation — is a `LibError`
+carrying a stable `code` your code can branch on. The one exception: aborting a call
+through its own `signal` surfaces the caller's own `AbortError` unwrapped, the way an
+`AbortController` behaves everywhere else.
+
+Reading a lib that is not public:
+
+```ts
+openLib('https://libs.example.com/private', {
+  auth: { type: 'basic', user: 'reader', password: '…' },
+})
+```
+
+Requirements for whoever publishes a lib, and ready-made storage configuration,
+are in [doc/protocol.md](doc/protocol.md).
+
+The top-level `picUrl(base, id)` builds a cover address without an open `Lib` and without
+touching the network — handy for a dashboard that only needs `<img>` sources; `lib.picUrl(id)`
+is the same address, built from a lib already open.
+
+## License
+
+Apache 2.0, code and specification alike. Full text in [LICENSE](LICENSE), copyright in
+[NOTICE](NOTICE).
 
 You may implement the protocol freely and without asking. The licence grants no trademark
 rights: your implementation goes by your own name.
