@@ -1,0 +1,75 @@
+name: deprecate
+
+# Deprecating a version is CLI-only — npm's website offers no button for it — and the
+# publish token lives in this repository's secrets rather than on anyone's machine. This
+# is how a version gets marked without the token ever leaving Actions.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to mark, with or without the leading v, for example 0.1.0'
+        required: true
+        type: string
+      message:
+        description: 'Why it is deprecated and what to use instead. Leave empty to lift an existing mark.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Inputs reach the shell through the environment, never through interpolation into
+      # the script: a version string is attacker-supplied as far as this file is concerned.
+      - name: Resolve the target
+        id: target
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          name=$(node -p "require('./package.json').name")
+          version=${VERSION#v}
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Target: $name@$version" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check the version is published
+        env:
+          TARGET: ${{ steps.target.outputs.name }}@${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+          published=$(npm view "$TARGET" version 2>/dev/null || true)
+          if [ -z "$published" ]; then
+            echo "::error::$TARGET is not in the registry — nothing to mark"
+            exit 1
+          fi
+
+      # An empty message is not a mistake: that is how npm lifts a deprecation.
+      - name: Deprecate
+        env:
+          TARGET: ${{ steps.target.outputs.name }}@${{ steps.target.outputs.version }}
+          MESSAGE: ${{ inputs.message }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm deprecate "$TARGET" "$MESSAGE"
+
+      - name: Report what the registry says now
+        env:
+          TARGET: ${{ steps.target.outputs.name }}@${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+          mark=$(npm view "$TARGET" deprecated 2>/dev/null || true)
+          if [ -z "$mark" ]; then
+            echo "$TARGET carries no deprecation mark." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "$TARGET is deprecated: $mark" >> "$GITHUB_STEP_SUMMARY"
+          fi
