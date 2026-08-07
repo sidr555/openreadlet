@@ -60,11 +60,34 @@ function stripUserinfo(raw: string): string {
 }
 
 /**
+ * `stripUserinfo`'s regex only recognises the `scheme://user:pass@host`
+ * shape, so an opaque address (`user:pass@h/p`, no `//`), a scheme-relative
+ * one (`//user:pass@h/p`) or one with a scheme `URL` treats as non-special
+ * (`mailto:hunter2@x.com`) sails through it untouched, `@` and all. Once the
+ * structural strip cannot apply, the only way to keep the promise that
+ * nothing here carries credentials is to refuse to render the address at
+ * all rather than guess at where the boundary between userinfo and host
+ * would have been.
+ */
+function isUnsafeShape(address: string): boolean {
+  if (!address.includes('@')) return false
+
+  try {
+    return new URL(address).host === ''
+  } catch {
+    return true
+  }
+}
+
+/**
  * Replaces the value of a query parameter with `***`. A token passed in the
  * query string would otherwise reach the application log through the error.
  * Userinfo (`user:pass@`) is stripped unconditionally, whether or not a
  * parameter name is given, so the output never carries credentials
- * regardless of what it was given.
+ * regardless of what it was given. When the address has a shape the strip
+ * cannot apply to — opaque, scheme-relative, or a scheme `URL` treats as
+ * non-special — it returns `'[redacted]'` instead of the input, rather than
+ * let a credential in an unrecognised shape ride through unchanged.
  *
  * A secret placed in the URL **fragment** is not redacted — deliberately:
  * a fragment is never sent to a server and never appears in an address this
@@ -82,6 +105,8 @@ function stripUserinfo(raw: string): string {
  */
 export function redactUrl(url: string, secretParam?: string): string {
   const address = stripUserinfo(url)
+
+  if (isUnsafeShape(address)) return '[redacted]'
 
   if (secretParam === undefined) return address
 

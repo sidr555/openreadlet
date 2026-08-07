@@ -7,7 +7,7 @@ const parseCatalogueEntry = (raw: unknown, field: string): CatalogueEntry => {
   const source = asObject(raw, field)
   const about = optionalString(source['about'], `${field}.about`, 500)
   const url = asString(source['url'], `${field}.url`)
-  assertHttps(url)
+  assertHttps(url, `${field}.url`)
 
   return {
     title: asString(source['title'], `${field}.title`, 120),

@@ -24,7 +24,7 @@ const parseTag = (raw: unknown, field: string): Tag => {
 const parseRef = (raw: unknown, field: string): LibRef => {
   const source = asObject(raw, field)
   const url = asString(source['url'], `${field}.url`)
-  assertHttps(url)
+  assertHttps(url, `${field}.url`)
 
   return {
     title: asString(source['title'], `${field}.title`, 120),
