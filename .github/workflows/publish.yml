@@ -32,6 +32,9 @@ jobs:
           node-version: '22'
           cache: npm
           registry-url: 'https://registry.npmjs.org'
+      # Trusted publishing wants npm 11.5.1 or newer, and Node 22 brings 10.9. The runtime
+      # itself stays on 22, the same one the checks run on — only npm moves.
+      - run: npm install -g npm@latest
       - run: npm ci
       - name: Check tag matches package.json version
         # Through the environment rather than interpolated into the script: on a manual run
@@ -48,6 +51,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run coverage
       - run: npm run build
-      - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No NODE_AUTH_TOKEN: with a token set npm authenticates by it and never reaches for
+      # OIDC, so the switch would pass unnoticed. The short-lived token comes from
+      # id-token: write above, and trusted publishing signs provenance on its own —
+      # hence no --provenance either.
+      - run: npm publish --access public
