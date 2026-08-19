@@ -57,14 +57,7 @@ export interface Bundle {
 }
 
 export type QuestionType =
-  | 'true-false'
-  | 'choice'
-  | 'multi-choice'
-  | 'order'
-  | 'blocks'
-  | 'spot'
-  | 'fill'
-  | 'pairs'
+  'true-false' | 'choice' | 'multi-choice' | 'order' | 'blocks' | 'spot' | 'fill' | 'pairs'
 
 interface QuestionBase {
   id: string

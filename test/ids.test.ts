@@ -3,12 +3,9 @@ import { LibError } from '../src/errors.js'
 import { assertId, isValidId } from '../src/ids.js'
 
 describe('isValidId', () => {
-  it.each(['dawn-song', 'spring_2026', 'a', 'A1', 'x'.repeat(64)])(
-    'accepts %s',
-    (id) => {
-      expect(isValidId(id)).toBe(true)
-    },
-  )
+  it.each(['dawn-song', 'spring_2026', 'a', 'A1', 'x'.repeat(64)])('accepts %s', (id) => {
+    expect(isValidId(id)).toBe(true)
+  })
 
   it.each([
     ['empty', ''],

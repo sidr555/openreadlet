@@ -58,9 +58,19 @@ describe('pickBundles', () => {
   const feed: Feed = {
     ver: { major: 1, minor: 0 },
     bundles: [
-      { id: 'spring-2026', updated: '2026-06-17T01:45:02Z', age: { min: 3, max: 7 }, tags: ['songs'] },
+      {
+        id: 'spring-2026',
+        updated: '2026-06-17T01:45:02Z',
+        age: { min: 3, max: 7 },
+        tags: ['songs'],
+      },
       { id: 'archive', updated: '2026-02-01T09:00:00Z', age: { min: 12, max: null }, tags: [] },
-      { id: 'misc', updated: '2026-01-05T12:30:00Z', age: { min: 0, max: null }, tags: ['watching'] },
+      {
+        id: 'misc',
+        updated: '2026-01-05T12:30:00Z',
+        age: { min: 0, max: null },
+        tags: ['watching'],
+      },
     ],
   }
 
@@ -127,7 +137,10 @@ describe('staleReadlets', () => {
   it('reports what disappeared from every bundle', () => {
     const bundles: Bundle[] = [
       { ver: { major: 1, minor: 0 }, readlets: [entry({ id: 'kept' })] },
-      { ver: { major: 1, minor: 0 }, readlets: [entry({ id: 'kept' }), entry({ id: 'also-kept' })] },
+      {
+        ver: { major: 1, minor: 0 },
+        readlets: [entry({ id: 'kept' }), entry({ id: 'also-kept' })],
+      },
     ]
 
     expect(staleReadlets(['kept', 'gone', 'also-kept'], bundles)).toEqual(['gone'])
