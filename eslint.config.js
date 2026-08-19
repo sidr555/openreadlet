@@ -15,6 +15,17 @@ export default defineConfig([
       globals: { ...globals.node, ...globals.browser },
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
+    rules: {
+      // An underscore is how this codebase already says "required by the signature,
+      // unused on purpose".
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    // A stand-in fetch is async because the contract it replaces is async, not because
+    // it awaits anything. Requiring an await inside would only add ceremony.
+    files: ['test/**/*.ts'],
+    rules: { '@typescript-eslint/require-await': 'off' },
   },
   {
     // tsconfig.json covers src and test only. Typed rules on the config files themselves

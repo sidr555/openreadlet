@@ -11,6 +11,9 @@ const respond = (body: string, init: ResponseInit & { url?: string } = {}): Resp
   return response
 }
 
+const urlOf = (input: RequestInfo | URL | undefined): string =>
+  input instanceof Request ? input.url : String(input)
+
 const codeOf = async (run: () => Promise<unknown>): Promise<string> => {
   try {
     await run()
@@ -242,7 +245,7 @@ describe('authentication', () => {
       })
       expect.unreachable('fetchJson must throw')
     } catch (error) {
-      expect(String(doFetch.mock.calls[0]?.[0])).toContain('token=s3cr3t')
+      expect(urlOf(doFetch.mock.calls[0]?.[0])).toContain('token=s3cr3t')
       expect((error as LibError).url).toContain('token=***')
       expect((error as LibError).url).not.toContain('s3cr3t')
     }
