@@ -74,6 +74,19 @@ The top-level `picUrl(base, id)` builds a cover address without an open `Lib` an
 touching the network — handy for a dashboard that only needs `<img>` sources; `lib.picUrl(id)`
 is the same address, built from a lib already open.
 
+## Contributing
+
+Style is enforced, not described: run the formatter and the linter before opening a pull
+request, and the same three commands CI runs will run on your patch.
+
+```bash
+npm run format     # Prettier rewrites the code to the accepted style
+npm run lint       # ESLint with typed rules
+npm test           # Vitest
+```
+
+Markdown is left out of the formatter on purpose: the specification is wrapped by hand.
+
 ## License
 
 Apache 2.0, code and specification alike. Full text in [LICENSE](LICENSE), copyright in

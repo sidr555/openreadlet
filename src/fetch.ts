@@ -207,11 +207,7 @@ interface Payload {
   safeUrl: string
 }
 
-const request = async (
-  url: string,
-  limit: number,
-  options: RequestOptions,
-): Promise<Payload> => {
+const request = async (url: string, limit: number, options: RequestOptions): Promise<Payload> => {
   const doFetch = options.fetch ?? globalThis.fetch
   const { target, safeUrl, headers } = prepare(url, options)
   const controller = new AbortController()
@@ -247,10 +243,14 @@ const request = async (
       })
     } catch (error) {
       if (timedOut) {
-        throw new LibError('timeout', `No response within ${options.timeout ?? DEFAULT_TIMEOUT} ms`, {
-          url: safeUrl,
-          cause: error,
-        })
+        throw new LibError(
+          'timeout',
+          `No response within ${options.timeout ?? DEFAULT_TIMEOUT} ms`,
+          {
+            url: safeUrl,
+            cause: error,
+          },
+        )
       }
 
       if (options.signal?.aborted) throw error
@@ -260,10 +260,14 @@ const request = async (
       // The shared timer can fire while the probe above is in flight; a
       // timeout that struck mid-probe is still a timeout, not a cors verdict.
       if (timedOut) {
-        throw new LibError('timeout', `No response within ${options.timeout ?? DEFAULT_TIMEOUT} ms`, {
-          url: safeUrl,
-          cause: error,
-        })
+        throw new LibError(
+          'timeout',
+          `No response within ${options.timeout ?? DEFAULT_TIMEOUT} ms`,
+          {
+            url: safeUrl,
+            cause: error,
+          },
+        )
       }
 
       // Likewise, the caller's own signal can abort while the probe is in

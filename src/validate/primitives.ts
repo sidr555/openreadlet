@@ -32,11 +32,7 @@ export function asString(raw: unknown, field: string, max?: number): string {
   return raw
 }
 
-export function optionalString(
-  raw: unknown,
-  field: string,
-  max?: number,
-): string | undefined {
+export function optionalString(raw: unknown, field: string, max?: number): string | undefined {
   if (raw === undefined || raw === null) return undefined
 
   return asString(raw, field, max)

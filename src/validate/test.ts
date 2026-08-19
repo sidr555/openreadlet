@@ -45,7 +45,12 @@ const parseQuestion = (raw: unknown, field: string): Question => {
     case 'choice': {
       const items = asItems(source['items'], `${field}.items`)
 
-      return { ...base, type, items, answer: asIndex(source['answer'], `${field}.answer`, items.length) }
+      return {
+        ...base,
+        type,
+        items,
+        answer: asIndex(source['answer'], `${field}.answer`, items.length),
+      }
     }
 
     case 'multi-choice':
@@ -97,9 +102,13 @@ const parseQuestion = (raw: unknown, field: string): Question => {
     }
 
     default:
-      throw new LibError('schema-mismatch', `Field "${field}.type" holds an unknown question type ${JSON.stringify(type)}`, {
-        field: `${field}.type`,
-      })
+      throw new LibError(
+        'schema-mismatch',
+        `Field "${field}.type" holds an unknown question type ${JSON.stringify(type)}`,
+        {
+          field: `${field}.type`,
+        },
+      )
   }
 }
 

@@ -1,0 +1,7 @@
+dist
+coverage
+package-lock.json
+
+# Markdown holds the specification and is wrapped by hand. Reflowing it would bury every
+# meaningful diff under whitespace.
+*.md

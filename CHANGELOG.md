@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-19 — tooling, no release
+
+- ESLint and Prettier hold the style that used to live in reviewers' heads. A contributor
+  now has a command that puts a patch into the accepted style rather than a neighbouring
+  file to imitate: `npm run format`, `npm run lint`.
+- TypeScript 6 is installed beside TypeScript 7 under the alias the TypeScript team
+  documents for this: the native compiler no longer ships the JS API that typescript-eslint
+  reads, and without it the plugin refuses to load at all. `tsc` is still the native 7.
+- Typed lint rules found two places where a stand-in `fetch` stringified its input: the
+  type admits a `Request`, and `String()` on one yields `[object Object]`. The address now
+  comes from `Request.url`.
+- `checks.yml` runs the linter and the formatter, and no longer runs twice for a single
+  commit to a branch with an open pull request.
+
 ## 2026-08-07 — 0.1.1
 
 - An address is rendered into an error only when it parses with a host and a scheme

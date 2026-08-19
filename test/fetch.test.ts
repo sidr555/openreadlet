@@ -11,6 +11,9 @@ const respond = (body: string, init: ResponseInit & { url?: string } = {}): Resp
   return response
 }
 
+const urlOf = (input: RequestInfo | URL | undefined): string =>
+  input instanceof Request ? input.url : String(input)
+
 const codeOf = async (run: () => Promise<unknown>): Promise<string> => {
   try {
     await run()
@@ -33,9 +36,7 @@ describe('fetchJson', () => {
   it('reports bad-json on a truncated document', async () => {
     const doFetch = vi.fn(async () => respond('{ "ver": "1.0", "readlets": ['))
 
-    expect(await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))).toBe(
-      'bad-json',
-    )
+    expect(await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))).toBe('bad-json')
   })
 
   it('redacts the query token from the url on bad-json too', async () => {
@@ -75,13 +76,9 @@ describe('fetchJson', () => {
   })
 
   it('refuses a document larger than the cap by its declared length', async () => {
-    const doFetch = vi.fn(async () =>
-      respond('{}', { headers: { 'content-length': '9000000' } }),
-    )
+    const doFetch = vi.fn(async () => respond('{}', { headers: { 'content-length': '9000000' } }))
 
-    expect(await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))).toBe(
-      'too-large',
-    )
+    expect(await codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))).toBe('too-large')
   })
 
   it('refuses a document that outgrows the cap while streaming', async () => {
@@ -199,9 +196,7 @@ describe('fetchJson', () => {
 
 describe('authentication', () => {
   it('sends basic credentials as a header', async () => {
-    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      respond('{}'),
-    )
+    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => respond('{}'))
 
     await fetchJson(URL_FEED, 5_000_000, {
       fetch: doFetch,
@@ -215,9 +210,7 @@ describe('authentication', () => {
   })
 
   it('sends a bearer token as a header', async () => {
-    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      respond('{}'),
-    )
+    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => respond('{}'))
 
     await fetchJson(URL_FEED, 5_000_000, {
       fetch: doFetch,
@@ -229,9 +222,7 @@ describe('authentication', () => {
   })
 
   it('refuses an empty query auth name before the request goes out', async () => {
-    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      respond('{}'),
-    )
+    const doFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => respond('{}'))
 
     await expect(
       fetchJson(URL_FEED, 5_000_000, {
@@ -254,7 +245,7 @@ describe('authentication', () => {
       })
       expect.unreachable('fetchJson must throw')
     } catch (error) {
-      expect(String(doFetch.mock.calls[0]?.[0])).toContain('token=s3cr3t')
+      expect(urlOf(doFetch.mock.calls[0]?.[0])).toContain('token=s3cr3t')
       expect((error as LibError).url).toContain('token=***')
       expect((error as LibError).url).not.toContain('s3cr3t')
     }

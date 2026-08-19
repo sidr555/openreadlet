@@ -9,9 +9,12 @@ const BASE = 'https://s3.example.com/birds'
 const example = (name: string): string =>
   readFileSync(fileURLToPath(new URL(`../examples/${name}`, import.meta.url)), 'utf8')
 
+const urlOf = (input: RequestInfo | URL | undefined): string =>
+  input instanceof Request ? input.url : String(input)
+
 const serve = (byUrl: Record<string, string>) =>
   vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
-    const url = String(input)
+    const url = urlOf(input)
     const body = byUrl[url]
 
     if (body === undefined) {

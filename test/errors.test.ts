@@ -20,9 +20,7 @@ describe('redactUrl', () => {
   it('hides the value of the named query parameter', () => {
     const url = 'https://libs.example.com/private/feed.json?token=s3cr3t'
 
-    expect(redactUrl(url, 'token')).toBe(
-      'https://libs.example.com/private/feed.json?token=***',
-    )
+    expect(redactUrl(url, 'token')).toBe('https://libs.example.com/private/feed.json?token=***')
   })
 
   it('returns the address untouched when no parameter is named', () => {
