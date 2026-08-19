@@ -1,8 +1,10 @@
 name: checks
 
+# A push to a branch with an open pull request would otherwise run this twice, and which
+# of the two runs to look at is anyone's guess.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
 
 jobs:
