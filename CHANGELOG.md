@@ -13,6 +13,8 @@
   comes from `Request.url`.
 - `checks.yml` runs the linter and the formatter, and no longer runs twice for a single
   commit to a branch with an open pull request.
+- Development dependencies are up to date: ESLint 10, globals 17, Vitest 4.1.11. That last
+  one carries a Vite that no longer pulls the vulnerable `nanoid`, so `npm audit` is clean.
 
 ## 2026-08-07 — 0.1.1
 

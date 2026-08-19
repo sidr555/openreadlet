@@ -42,16 +42,16 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^26.1.2",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^9.39.1",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^16.5.0",
+    "globals": "^17.11.0",
     "prettier": "^3.6.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.67.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
