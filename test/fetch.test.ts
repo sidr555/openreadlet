@@ -362,3 +362,53 @@ describe('fetchText and fetchBlob', () => {
     expect(blob.size).toBeGreaterThan(0)
   })
 })
+
+describe('refusal classification', () => {
+  const s3Error = (code: string): string =>
+    `<?xml version="1.0" encoding="UTF-8"?>\n<Error><Code>${code}</Code>` +
+    `<Message>Something about it</Message><RequestId>ABC123</RequestId></Error>`
+
+  const refuse = async (body: string, status = 403): Promise<string> => {
+    const doFetch = vi.fn(async () =>
+      respond(body, { status, headers: { 'content-type': 'application/xml' } }),
+    )
+
+    return codeOf(() => fetchJson(URL_FEED, 5_000_000, { fetch: doFetch }))
+  }
+
+  it.each([['UserSuspended'], ['AllAccessDisabled'], ['AccountProblem']])(
+    'reads %s as the whole storage being unavailable',
+    async (code) => {
+      expect(await refuse(s3Error(code))).toBe('storage-unavailable')
+    },
+  )
+
+  it.each([['AccessDenied'], ['InvalidAccessKeyId'], ['SignatureDoesNotMatch']])(
+    'leaves %s as a refusal of this document',
+    async (code) => {
+      expect(await refuse(s3Error(code))).toBe('forbidden')
+    },
+  )
+
+  it('classifies a 401 by the same body', async () => {
+    expect(await refuse(s3Error('UserSuspended'), 401)).toBe('storage-unavailable')
+  })
+
+  it.each([
+    ['an empty body', ''],
+    ['a body that is not xml', 'Forbidden'],
+    ['an html error page', '<html><body><h1>403 Forbidden</h1></body></html>'],
+    ['xml without a code', '<Error><Message>No code here</Message></Error>'],
+    ['an unknown storage code', s3Error('SomethingElseEntirely')],
+  ])('falls back to forbidden on %s', async (_name, body) => {
+    expect(await refuse(body)).toBe('forbidden')
+  })
+
+  it('falls back to forbidden rather than too-large on an oversized body', async () => {
+    expect(await refuse('x'.repeat(64 * 1024) + s3Error('UserSuspended'))).toBe('forbidden')
+  })
+
+  it('does not let the error body raise a code of its own', async () => {
+    expect(await refuse('<Error><Code>NoSuchKey</Code></Error>')).toBe('forbidden')
+  })
+})

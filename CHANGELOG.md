@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-23 — 0.2.0
+
+- A refused request is no longer one code. `storage-unavailable` is new, and separates a
+  storage account that is serving nothing — suspended, disabled, unpaid — from `forbidden`,
+  a document the publisher closed. Both arrive as a bare 403; the `<Error>` document in the
+  body tells them apart. A reader that showed «the publisher closed this library» when the
+  hosting provider had suspended the account was accusing the publisher of something they
+  had not done, and was backing off for a day from an outage that lasts minutes.
+- At most 8 KiB of a refusal's body is read, and only its `<Code>` is looked at. A body
+  that is missing, oversized, unreadable, or not that document leaves the code at
+  `forbidden`, so a storage that does not speak the S3 error dialect behaves as before.
+- The `LibErrorCode` union gained a member, which breaks exhaustive `switch` statements
+  over it — hence a minor, not a patch.
+
 ## 2026-08-19 — tooling, no release
 
 - ESLint and Prettier hold the style that used to live in reviewers' heads. A contributor

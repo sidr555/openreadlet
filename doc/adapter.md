@@ -80,10 +80,26 @@ A failure is an exception carrying a stable `kebab-case` code, not human-facing 
 prose is written by the application, in its own language and tone. The codes fall into
 three groups — did not arrive (`network-failed`, `timeout`, `insecure-origin`,
 `foreign-origin`, `cors-blocked`), arrived but wrong (`not-found`, `forbidden`,
-`http-error`, `too-large`, `bad-json`), parsed and refused (`schema-mismatch`,
-`unsupported-version`, `bad-id`, `duplicate-id`). `cors-blocked` and `network-failed` are
-kept apart because a browser reports both as the same `TypeError`; telling them apart takes
-a second, `no-cors` probe once the first request has failed.
+`storage-unavailable`, `http-error`, `too-large`, `bad-json`), parsed and refused
+(`schema-mismatch`, `unsupported-version`, `bad-id`, `duplicate-id`). `cors-blocked` and
+`network-failed` are kept apart because a browser reports both as the same `TypeError`;
+telling them apart takes a second, `no-cors` probe once the first request has failed.
+
+`storage-unavailable` and `forbidden` are kept apart for the same kind of reason: the
+transport reports both as a bare 403, and they ask the reader for opposite things. A
+`forbidden` document is closed by the publisher and stays closed until the publisher opens
+it, so an application is right to say so and to stop asking for a long while.
+`storage-unavailable` means the account behind the lib is serving nothing at all —
+suspended, disabled, or unpaid — which the publisher did not choose, usually did not yet
+notice, and typically has fixed within the hour; an application that blames them or gives
+up for a day is wrong on both counts. Telling them apart takes the refusal's own body: S3
+and its compatibles answer with an `<Error>` document naming the reason, and
+`UserSuspended`, `AllAccessDisabled` and `AccountProblem` are the ones that mean the whole
+account. At most 8 KiB of that body is read, one field of it is looked at, and a body that
+is missing, oversized, or shaped like anything else leaves the code at `forbidden` — a
+storage that does not speak this dialect loses nothing but the distinction. This lives in
+the adapter and not in the protocol on purpose: the protocol does not require S3, and
+nothing here makes it.
 
 **One exception is not a `LibError`.** Passing `signal` to a call and aborting it mid-flight
 surfaces the caller's own abort, not a `LibError` with a code — an `AbortController` must
