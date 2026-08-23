@@ -201,6 +201,65 @@ const readCapped = async (
   return bytes
 }
 
+/** How much of a refusal's body is worth reading to find out what it says. */
+const REFUSAL_CAP = 8 * 1024
+
+/**
+ * Storage-level reasons that mean the whole account is out rather than this one
+ * document being closed: the account is suspended, disabled, or unpaid. S3 and its
+ * compatibles answer a refusal with an `<Error>` document naming the reason, and
+ * these are the reasons no reader can act on and no publisher chose.
+ */
+const STORAGE_OUT = new Set(['UserSuspended', 'AllAccessDisabled', 'AccountProblem'])
+
+/**
+ * Reads at most `REFUSAL_CAP` bytes of a response that is already known to be a
+ * refusal. Nothing here may throw and nothing here may be slow: a body that is
+ * missing, oversized, or unreadable simply carries no answer, and the refusal is
+ * classified without it. Deliberately not `readCapped` — its `too-large` would
+ * replace the refusal with a complaint about size.
+ */
+const peekRefusal = async (response: Response): Promise<string> => {
+  try {
+    const body = response.body
+
+    if (!body) {
+      const whole = await response.text()
+
+      return whole.length > REFUSAL_CAP ? '' : whole
+    }
+
+    const reader = body.getReader()
+    const decoder = new TextDecoder()
+    let text = ''
+
+    for (;;) {
+      const { done, value } = await reader.read()
+
+      if (done) return text
+      if (!value) continue
+
+      text += decoder.decode(value, { stream: true })
+
+      if (text.length > REFUSAL_CAP) {
+        await reader.cancel()
+
+        return ''
+      }
+    }
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * The `<Code>` of an S3-style `<Error>` document. One known field of one known
+ * document, so a regular expression rather than an XML parser; anything that does
+ * not look like that document yields '' and changes nothing.
+ */
+const refusalCode = (body: string): string =>
+  /<Error\b[^>]*>[\s\S]*?<Code>\s*([A-Za-z]+)\s*<\/Code>/.exec(body)?.[1] ?? ''
+
 interface Payload {
   bytes: Uint8Array<ArrayBuffer>
   contentType: string
@@ -311,10 +370,18 @@ const request = async (url: string, limit: number, options: RequestOptions): Pro
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new LibError('forbidden', 'The storage refuses to serve this document', {
-        url: safeUrl,
-        status: response.status,
-      })
+      // Told apart because they call for different things: a closed document is the
+      // publisher's decision and stays closed until they change it, while a storage
+      // that is out has nothing to do with them and is usually back within the hour.
+      const out = STORAGE_OUT.has(refusalCode(await peekRefusal(response)))
+
+      throw new LibError(
+        out ? 'storage-unavailable' : 'forbidden',
+        out
+          ? 'The storage is not serving anything from this account'
+          : 'The storage refuses to serve this document',
+        { url: safeUrl, status: response.status },
+      )
     }
 
     if (!response.ok) {

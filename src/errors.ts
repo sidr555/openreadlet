@@ -12,6 +12,7 @@ export type LibErrorCode =
   // arrived but wrong
   | 'not-found'
   | 'forbidden'
+  | 'storage-unavailable'
   | 'http-error'
   | 'too-large'
   | 'bad-json'
