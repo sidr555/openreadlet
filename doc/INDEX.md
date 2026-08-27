@@ -14,6 +14,12 @@ Added a file to `doc/`? Add it here too.
 - [adapter.md](adapter.md) — the boundaries of the reference adapter `@openreadlet/lib`:
   what it does, what it does not, the shape of errors
 
+## Designs
+
+- [specs/2026-08-27-sources-design.md](specs/2026-08-27-sources-design.md) — reading a lib
+  from storage that is not a static host: the source abstraction, the prefixed address form
+  and the Yandex.Disk source, with the CORS probe the design rests on
+
 ## Everything else
 
 | File | What is in it |
