@@ -21,8 +21,9 @@
   Building a cover address without an open `Lib` no longer has a top-level shortcut; open
   a `Lib` and call `directUrl` on it.
 - New subpath exports, `@openreadlet/lib/sources/static` and `@openreadlet/lib/sources/yadisk`,
-  so a consumer that builds a `Source` itself and hands it to `openLib` pulls in only the
-  source it uses.
+  so a consumer can import a source directly and hand it to `openLib` without going through
+  a subscription string. `openLib` itself still resolves any supported address from the main
+  entry point, so importing it there carries both sources regardless of which one is used.
 - Two long-standing defects, fixed while sources were split out of the one fetch path they
   used to share:
   - `new URL(landed)`, judging where a redirect landed, ran with no `try` around it. A

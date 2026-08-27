@@ -89,12 +89,13 @@ const about = await lib.about()
 ```
 
 Everything past `openLib` works the same as with a plain `https` address: `about`,
-`feed`, `bundle`, `text`, `test` and `pic` all resolve through the folder. A consumer
-that builds a `Source` itself instead of going through a subscription string — the
-dashboard opening a lib without storing a subscription for it, say — can import
-`staticSource` or `yadiskSource` from their own subpaths, `@openreadlet/lib/sources/static`
-and `@openreadlet/lib/sources/yadisk`, and hand the result straight to `openLib`, so a
-build that never touches the yadisk one does not carry it.
+`feed`, `bundle`, `text`, `test` and `pic` all resolve through the folder. `openLib`
+resolves any address it is given — plain or prefixed — so importing it from the main
+entry point always carries both sources. A consumer that wants to build a `Source`
+directly, without going through a subscription string — the dashboard opening a lib
+without storing a subscription for it, say — can import `staticSource` or
+`yadiskSource` from their own subpaths, `@openreadlet/lib/sources/static` and
+`@openreadlet/lib/sources/yadisk`, and hand the result straight to `openLib`.
 
 ## Contributing
 
