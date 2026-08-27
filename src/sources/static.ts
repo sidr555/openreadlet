@@ -1,4 +1,5 @@
 import type { RequestOptions } from '../fetch.js'
+import { assertHttps } from '../paths.js'
 import { httpGet } from './http.js'
 import type { Source, SourcePayload } from './types.js'
 
@@ -11,14 +12,19 @@ const sameOrigin = (target: URL, landed: URL): boolean => target.origin === land
  * `parseAddress` always hands this a normalised address, but the function is
  * exported on its own, and a caller reaching it directly — say, to build a
  * `Source` for `openLib` without a round trip through a canonical string —
- * gets the same double-slash-free join either way.
+ * gets the same double-slash-free join either way. `assertHttps` runs for
+ * the same reason: a direct call skips `parseAddress` entirely, so this is
+ * the only place left that can refuse a plain http base or one carrying
+ * embedded credentials before it is joined into every request this source
+ * ever makes.
  */
 export function staticSource(inner: string): Source {
+  assertHttps(inner)
+
   const base = inner.replace(/\/+$/, '')
 
   return {
     base,
-    allowsLanding: sameOrigin,
 
     get(path: string, limit: number, options: RequestOptions): Promise<SourcePayload> {
       return httpGet(`${base}/${path}`, limit, options, sameOrigin)

@@ -57,7 +57,6 @@ export function yadiskSource(inner: string): Source {
 
   return {
     base: `yadisk+${inner}`,
-    allowsLanding: downloadLanding,
 
     async get(path: string, limit: number, options: RequestOptions): Promise<SourcePayload> {
       // httpGet's own timer is what a timeout is, and its own `signal` is
