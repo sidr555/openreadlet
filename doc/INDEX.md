@@ -20,6 +20,9 @@ Added a file to `doc/`? Add it here too.
   from storage that is not a static host: the source abstraction, the prefixed address form
   and the Yandex.Disk source, with the CORS probe the design rests on
 
+- [plans/2026-08-27-sources.md](plans/2026-08-27-sources.md) — the implementation plan for
+  that design, task by task
+
 ## Everything else
 
 | File | What is in it |
