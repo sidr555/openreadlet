@@ -208,3 +208,7 @@ path from nothing to a published lib.
 
 Reach for Yandex.Disk when the publisher already keeps the material there and will not set up
 hosting.
+
+Reach for a Nextcloud share when the publisher runs their own server and can change its
+configuration — which is the condition, not a detail. A WebDAV share nobody has configured
+looks exactly like one that is broken.
