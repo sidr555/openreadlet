@@ -3,7 +3,13 @@ import type { RequestOptions } from '../fetch.js'
 import { SAFE_SCHEMES } from '../paths.js'
 import type { LandingPolicy, SourcePayload } from './types.js'
 
-const DEFAULT_TIMEOUT = 10_000
+/**
+ * Exported so a source that must split one budget across more than one
+ * `httpGet` call (yadisk's resolve-then-download) can default to the same
+ * value `httpGet` itself falls back to, rather than duplicate the number —
+ * a duplicate that would silently stop matching if this one ever moves.
+ */
+export const DEFAULT_TIMEOUT = 10_000
 
 interface Prepared {
   target: string

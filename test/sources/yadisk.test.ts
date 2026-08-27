@@ -106,7 +106,15 @@ describe('yadiskSource', () => {
         const url = urlOf(input)
 
         if (url.startsWith('https://cloud-api.yandex.net/')) {
-          return respond(JSON.stringify({ href: HREF }), url)
+          // The resolve leg actually spends part of the clock (6s of a 10s
+          // budget) so a mutant that hands the download leg a fresh full
+          // budget instead of what is left can be told apart from the real
+          // implementation: with the real one, 4s remain and the download
+          // leg's own timeout fires by t=10s; with the mutant, it would not
+          // fire until t=16s.
+          return new Promise<Response>((resolve) => {
+            setTimeout(() => resolve(respond(JSON.stringify({ href: HREF }), url)), 6_000)
+          })
         }
 
         return new Promise<Response>((_resolve, reject) => {
@@ -116,14 +124,80 @@ describe('yadiskSource', () => {
         })
       })
 
-      const run = yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch, timeout: 10_000 })
-      const settled = codeOf(() => run)
+      let settled = false
+      let code = 'no-error'
+
+      yadiskSource(INNER)
+        .get('text/a.md', 1000, { fetch: doFetch, timeout: 10_000 })
+        .then(
+          () => {
+            settled = true
+          },
+          (error: unknown) => {
+            settled = true
+            code = (error as LibError).code
+          },
+        )
 
       await vi.advanceTimersByTimeAsync(10_000)
 
-      expect(await settled).toBe('timeout')
+      expect(settled).toBe(true)
+      expect(code).toBe('timeout')
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('refuses a resolve answer that names an address outside the storage hosts', async () => {
+    const doFetch = vi.fn(async (input: RequestInfo | URL) =>
+      respond(JSON.stringify({ href: 'https://evil.example.net/x' }), urlOf(input)),
+    )
+
+    expect(
+      await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch })),
+    ).toBe('foreign-origin')
+
+    // The evil address must never be fetched: only the resolve call happens.
+    expect(doFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("surfaces the caller's own cancellation as-is, not as a timeout", async () => {
+    const controller = new AbortController()
+
+    const doFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = urlOf(input)
+
+      if (url.startsWith('https://cloud-api.yandex.net/')) {
+        return respond(JSON.stringify({ href: HREF }), url)
+      }
+
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('aborted', 'AbortError'))
+        })
+      })
+    })
+
+    const run = yadiskSource(INNER).get('text/a.md', 1000, {
+      fetch: doFetch,
+      signal: controller.signal,
+    })
+
+    // Let the resolve leg finish and the download leg start before
+    // cancelling, so the abort lands mid-flight rather than before any
+    // fetch has begun.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    controller.abort()
+
+    let error: unknown
+
+    try {
+      await run
+    } catch (caught) {
+      error = caught
+    }
+
+    expect((error as { name?: string }).name).toBe('AbortError')
+    expect((error as Partial<LibError>).code).not.toBe('timeout')
   })
 })

@@ -1,6 +1,7 @@
 import { LibError } from '../errors.js'
 import type { RequestOptions } from '../fetch.js'
-import { httpGet } from './http.js'
+import { assertHttps } from '../paths.js'
+import { DEFAULT_TIMEOUT, httpGet } from './http.js'
 import type { Source, SourcePayload } from './types.js'
 
 const API = 'https://cloud-api.yandex.net/v1/disk/public/resources/download'
@@ -16,8 +17,6 @@ const downloadLanding = (_target: URL, landed: URL): boolean =>
 
 /** The resolve answer is small; a cap is still applied rather than assumed. */
 const RESOLVE_CAP = 64 * 1024
-
-const DEFAULT_TIMEOUT = 10_000
 
 /**
  * A public folder is read in two steps: ask the api for a download address,
@@ -72,6 +71,25 @@ export function yadiskSource(inner: string): Source {
       const started = Date.now()
 
       const href = await resolve(path, { ...options, timeout: budget })
+
+      // The resolve answer is data from a third party, no more trusted than
+      // any other input this package acts on before use — an identifier is
+      // validated before it enters a path, a scheme is allowlisted, a
+      // redirect is judged by where it lands. An address the answer names
+      // deserves the same scrutiny before anything, credentials in
+      // `options.auth` included, is sent to it: `assertHttps` refuses a bad
+      // scheme or embedded credentials, and `downloadLanding` refuses a host
+      // that is not one of the storage hosts, both before the request goes
+      // out rather than after.
+      const target = assertHttps(href)
+
+      if (!downloadLanding(target, target)) {
+        throw new LibError(
+          'foreign-origin',
+          `Resolve answered with an address outside the storage hosts: ${target.origin}`,
+          { url: `${target.origin}${target.pathname}` },
+        )
+      }
 
       // Clamped to a minimum of 1, not left able to reach zero or below: a
       // non-positive timeout would either fire before httpGet's own timer
