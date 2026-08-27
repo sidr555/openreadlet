@@ -1,6 +1,6 @@
 {
   "name": "@openreadlet/lib",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Reference adapter for the Lib protocol: address, fetch, validate and select readlets from a lib",
   "keywords": [
     "readlet",
@@ -27,6 +27,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./sources/static": {
+      "types": "./dist/sources/static.d.ts",
+      "default": "./dist/sources/static.js"
+    },
+    "./sources/yadisk": {
+      "types": "./dist/sources/yadisk.d.ts",
+      "default": "./dist/sources/yadisk.js"
     },
     "./package.json": "./package.json"
   },

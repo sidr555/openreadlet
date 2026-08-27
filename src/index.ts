@@ -12,11 +12,14 @@ export {
   assertHttps,
   bundleUrl,
   feedUrl,
-  picUrl,
   resolveBase,
   testUrl,
   textUrl,
 } from './paths.js'
+
+export { parseAddress } from './address.js'
+export { staticSource } from './sources/static.js'
+export type { LandingPolicy, Source, SourcePayload } from './sources/types.js'
 
 export { parseVersion, SUPPORTED } from './version.js'
 export type { Version } from './version.js'

@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { LibError } from '../src/errors.js'
 import {
+  aboutPath,
   aboutUrl,
   assertHttps,
+  bundlePath,
   bundleUrl,
+  feedPath,
   feedUrl,
-  picUrl,
+  picPath,
   resolveBase,
+  testPath,
   testUrl,
+  textPath,
   textUrl,
 } from '../src/paths.js'
 
@@ -233,7 +238,6 @@ describe('document addresses', () => {
     expect(feedUrl(BASE)).toBe(`${BASE}/feed.json`)
     expect(bundleUrl(BASE, 'spring-2026')).toBe(`${BASE}/bundles/spring-2026.json`)
     expect(textUrl(BASE, 'dawn-song')).toBe(`${BASE}/text/dawn-song.md`)
-    expect(picUrl(BASE, 'dawn-song')).toBe(`${BASE}/pic/dawn-song.webp`)
     expect(testUrl(BASE, 'dawn-song')).toBe(`${BASE}/test/dawn-song.json`)
   })
 
@@ -244,5 +248,29 @@ describe('document addresses', () => {
     } catch (error) {
       expect((error as LibError).code).toBe('bad-id')
     }
+  })
+})
+
+describe('relative path builders', () => {
+  it('builds every document path without a base', () => {
+    expect(aboutPath()).toBe('about.json')
+    expect(feedPath()).toBe('feed.json')
+    expect(bundlePath('5-7')).toBe('bundles/5-7.json')
+    expect(textPath('dawn-song')).toBe('text/dawn-song.md')
+    expect(picPath('dawn-song')).toBe('pic/dawn-song.webp')
+    expect(testPath('dawn-song')).toBe('test/dawn-song.json')
+  })
+
+  it('validates the identifier before it enters a path', () => {
+    try {
+      textPath('../../etc/passwd')
+      expect.unreachable('textPath must throw')
+    } catch (error) {
+      expect((error as LibError).code).toBe('bad-id')
+    }
+  })
+
+  it('keeps the existing url builders working on top of them', () => {
+    expect(textUrl(BASE, 'dawn-song')).toBe(`${BASE}/${textPath('dawn-song')}`)
   })
 })
