@@ -47,8 +47,35 @@ describe('parseAddress', () => {
     expect(codeOf(() => parseAddress('ftp+https://disk.yandex.ru/d/x'))).toBe('insecure-origin')
   })
 
+  it('refuses prefixes that collide with Object.prototype members', () => {
+    expect(codeOf(() => parseAddress('constructor+https://disk.yandex.ru/d/x'))).toBe(
+      'insecure-origin',
+    )
+    expect(codeOf(() => parseAddress('__proto__+https://disk.yandex.ru/d/x'))).toBe(
+      'insecure-origin',
+    )
+    expect(codeOf(() => parseAddress('toString+https://disk.yandex.ru/d/x'))).toBe(
+      'insecure-origin',
+    )
+  })
+
   it('refuses http behind a known prefix', () => {
     expect(codeOf(() => parseAddress('yadisk+http://disk.yandex.ru/d/x'))).toBe('insecure-origin')
+  })
+
+  it('drops a query string and fragment pasted straight out of the Disk share dialog', () => {
+    const withQuery = parseAddress('yadisk+https://disk.yandex.ru/d/x?w=1')
+    const bare = parseAddress('yadisk+https://disk.yandex.ru/d/x')
+
+    expect(withQuery.canonical).toBe(bare.canonical)
+    expect(withQuery.canonical).toBe('yadisk+https://disk.yandex.ru/d/x')
+
+    const withFragment = parseAddress('yadisk+https://disk.yandex.ru/d/x#foo')
+    expect(withFragment.canonical).toBe(bare.canonical)
+  })
+
+  it('still refuses a query string on a bare, unprefixed address', () => {
+    expect(codeOf(() => parseAddress('https://s3.example.com/birds?w=1'))).toBe('insecure-origin')
   })
 })
 
