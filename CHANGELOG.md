@@ -24,6 +24,13 @@
   so a consumer can import a source directly and hand it to `openLib` without going through
   a subscription string. `openLib` itself still resolves any supported address from the main
   entry point, so importing it there carries both sources regardless of which one is used.
+- Hardening: the address a subscription names is resolved to a source through an exhaustive
+  switch, so a source kind nobody wired up fails to compile instead of quietly being served
+  as a static lib. Reachable only from inside the package — `sourceFor` is not exported —
+  but it is the mistake the next source added would otherwise make silently.
+- `doc/providers.md` is new: where a lib can live, with ready CORS configurations for nginx,
+  Caddy and an S3 bucket, and the storage measured not to work from a browser, each with the
+  exact point of failure so the measurement need not be repeated.
 - Two long-standing defects, fixed while sources were split out of the one fetch path they
   used to share:
   - `new URL(landed)`, judging where a redirect landed, ran with no `try` around it. A
