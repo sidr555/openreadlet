@@ -1,14 +1,16 @@
-import { fetchBlob, fetchJson, fetchText, type RequestOptions } from './fetch.js'
+import { parseAddress } from './address.js'
+import { decodeJson, fetchJson, type RequestOptions } from './fetch.js'
 import {
-  aboutUrl,
+  aboutPath,
   assertHttps,
-  bundleUrl,
-  feedUrl,
-  picUrl as buildPicUrl,
-  resolveBase,
-  testUrl,
-  textUrl,
+  bundlePath,
+  feedPath,
+  picPath,
+  testPath,
+  textPath,
 } from './paths.js'
+import { sourceFor } from './sources/registry.js'
+import type { Source } from './sources/types.js'
 import type { About, Bundle, Feed, Libs, Test } from './types.js'
 import { parseAbout } from './validate/about.js'
 import { parseBundle } from './validate/bundle.js'
@@ -37,7 +39,8 @@ export interface Lib {
   text(id: string, call?: Call): Promise<string>
   test(id: string, call?: Call): Promise<Test>
   pic(id: string, call?: Call): Promise<Blob>
-  picUrl(id: string): string
+  /** A direct address for a document, or null when the source cannot offer one. */
+  directUrl(path: string): string | null
 }
 
 const DEFAULT_DOC_BYTES = 5_000_000
@@ -48,45 +51,48 @@ const withCall = (options: LibOptions, call?: Call): RequestOptions =>
   call?.signal ? { ...options, signal: call.signal } : options
 
 /**
- * A subscription is a base address and nothing more. Settings are given once,
+ * A subscription is a source and nothing more. Settings are given once,
  * here, so that the application does not thread them through every call.
+ * `address` accepts either a plain address (resolved to a source through
+ * the registry) or an already-prepared source, so a caller who built one
+ * itself does not have to round-trip it through its own canonical string.
  */
-export function openLib(base: string, options: LibOptions = {}): Lib {
-  const root = resolveBase(base)
+export function openLib(address: string | Source, options: LibOptions = {}): Lib {
+  const source = typeof address === 'string' ? sourceFor(parseAddress(address)) : address
   const docLimit = options.maxDocBytes ?? DEFAULT_DOC_BYTES
   const textLimit = options.maxTextBytes ?? DEFAULT_TEXT_BYTES
   const picLimit = options.maxPicBytes ?? DEFAULT_PIC_BYTES
 
+  const json = async (path: string, call?: Call): Promise<unknown> => {
+    const { bytes, safeUrl } = await source.get(path, docLimit, withCall(options, call))
+
+    return decodeJson(bytes, safeUrl)
+  }
+
   return {
-    base: root,
-
-    async about(call) {
-      return parseAbout(await fetchJson(aboutUrl(root), docLimit, withCall(options, call)))
-    },
-
-    async feed(call) {
-      return parseFeed(await fetchJson(feedUrl(root), docLimit, withCall(options, call)))
-    },
-
-    async bundle(id, call) {
-      return parseBundle(await fetchJson(bundleUrl(root, id), docLimit, withCall(options, call)))
-    },
+    base: source.base,
+    about: async (call) => parseAbout(await json(aboutPath(), call)),
+    feed: async (call) => parseFeed(await json(feedPath(), call)),
+    bundle: async (id, call) => parseBundle(await json(bundlePath(id), call)),
+    test: async (id, call) => parseTest(await json(testPath(id), call)),
 
     async text(id, call) {
-      return fetchText(textUrl(root, id), textLimit, withCall(options, call))
-    },
+      const { bytes } = await source.get(textPath(id), textLimit, withCall(options, call))
 
-    async test(id, call) {
-      return parseTest(await fetchJson(testUrl(root, id), docLimit, withCall(options, call)))
+      return new TextDecoder().decode(bytes)
     },
 
     async pic(id, call) {
-      return fetchBlob(buildPicUrl(root, id), picLimit, withCall(options, call))
+      const { bytes, contentType } = await source.get(
+        picPath(id),
+        picLimit,
+        withCall(options, call),
+      )
+
+      return new Blob([bytes], { type: contentType || 'image/webp' })
     },
 
-    picUrl(id) {
-      return buildPicUrl(root, id)
-    },
+    directUrl: (path) => source.directUrl(path),
   }
 }
 

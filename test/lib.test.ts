@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import type { LibError } from '../src/errors.js'
 import { fetchLibs, openLib } from '../src/lib.js'
+import { staticSource } from '../src/sources/static.js'
 
 const BASE = 'https://s3.example.com/birds'
 
@@ -59,7 +60,7 @@ describe('openLib', () => {
     const doFetch = serve({})
     const lib = openLib(BASE, { fetch: doFetch })
 
-    expect(lib.picUrl('dawn-song')).toBe(`${BASE}/pic/dawn-song.webp`)
+    expect(lib.directUrl('pic/dawn-song.webp')).toBe(`${BASE}/pic/dawn-song.webp`)
     expect(doFetch).not.toHaveBeenCalled()
   })
 
@@ -196,5 +197,22 @@ describe('fetchLibs', () => {
     await expect(fetchLibs(withQuery, { fetch: doFetch })).resolves.toMatchObject({
       ver: { major: 1, minor: 0 },
     })
+  })
+})
+
+describe('openLib over a source', () => {
+  it('accepts a prepared source', async () => {
+    const doFetch = serve({ [`${BASE}/about.json`]: example('about.json') })
+    const lib = openLib(staticSource(BASE), { fetch: doFetch })
+
+    await expect(lib.about()).resolves.toMatchObject({ title: 'Backyard Birds' })
+  })
+
+  it('offers a direct cover address for a static lib', () => {
+    expect(openLib(BASE).directUrl('pic/dawn-song.webp')).toBe(`${BASE}/pic/dawn-song.webp`)
+  })
+
+  it('keeps the canonical address as the lib identity', () => {
+    expect(openLib('https://s3.example.com/birds///').base).toBe(BASE)
   })
 })

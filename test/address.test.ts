@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseAddress } from '../src/address.js'
 import type { LibError } from '../src/errors.js'
+import { sourceFor } from '../src/sources/registry.js'
 
 const codeOf = (run: () => unknown): string => {
   try {
@@ -48,5 +49,19 @@ describe('parseAddress', () => {
 
   it('refuses http behind a known prefix', () => {
     expect(codeOf(() => parseAddress('yadisk+http://disk.yandex.ru/d/x'))).toBe('insecure-origin')
+  })
+})
+
+describe('sourceFor', () => {
+  it('resolves a bare address to a static source', () => {
+    expect(sourceFor(parseAddress('https://s3.example.com/birds')).base).toBe(
+      'https://s3.example.com/birds',
+    )
+  })
+
+  it('resolves a yadisk-prefixed address to a yadisk source', () => {
+    expect(sourceFor(parseAddress('yadisk+https://disk.yandex.ru/d/x')).base).toBe(
+      'yadisk+https://disk.yandex.ru/d/x',
+    )
   })
 })
