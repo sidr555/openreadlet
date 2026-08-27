@@ -28,22 +28,29 @@ const request = (
   options: RequestOptions,
 ): ReturnType<typeof httpGet> => httpGet(url, limit, options, sameOrigin)
 
+/**
+ * Shared by every caller that turns raw bytes into a JSON document, so a
+ * malformed body raises the same `bad-json` with the same redacted address
+ * regardless of which transport fetched it.
+ */
+export function decodeJson(bytes: Uint8Array, safeUrl: string): unknown {
+  const text = new TextDecoder().decode(bytes)
+
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    throw new LibError('bad-json', 'Document is not valid JSON', { url: safeUrl, cause: error })
+  }
+}
+
 export async function fetchJson(
   url: string,
   limit: number,
   options: RequestOptions = {},
 ): Promise<unknown> {
   const { bytes, safeUrl } = await request(url, limit, options)
-  const text = new TextDecoder().decode(bytes)
 
-  try {
-    return JSON.parse(text)
-  } catch (error) {
-    throw new LibError('bad-json', 'Document is not valid JSON', {
-      url: safeUrl,
-      cause: error,
-    })
-  }
+  return decodeJson(bytes, safeUrl)
 }
 
 export async function fetchText(
