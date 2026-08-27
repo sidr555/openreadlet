@@ -105,6 +105,70 @@ that synchronises a large feed will therefore make roughly twice as many request
 against a static host. And Yandex publishes no CORS guarantee for these endpoints, so support
 is empirical: it works, and it is watched.
 
+### WebDAV, and Nextcloud in particular
+
+A WebDAV server needs no source of its own, because **WebDAV adds nothing to a `GET`**. The
+protocol never lists a directory, so `PROPFIND` is never issued; a document is fetched from a
+path, which is what the static source already does. What matters is only whether the server
+exposes files at a joinable address.
+
+A Nextcloud public share does. Verified 2026-08-27 against Nextcloud 34.0.3 in a container:
+
+```
+https://host/public.php/dav/files/<share-token>
+```
+
+is a base address like any other. `about.json` and a nested `text/probe.md` both answered
+`200` anonymously, and a missing document answered `404` with a DAV error document. The other
+address a share offers — `/s/<token>/download?path=…&files=…` — answers `303` and is the
+browser's download flow; a reader never needs it.
+
+**What does need doing is CORS, and Nextcloud ships with it off.** Nothing in the responses
+above carried `Access-Control-Allow-Origin` until the server was configured. For Apache, which
+is what the official image runs:
+
+```apache
+<LocationMatch "^/public\.php/dav/">
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+  Header always set Access-Control-Max-Age "3600"
+</LocationMatch>
+```
+
+`always` is not decoration. Without it Apache drops the header on error responses, and a
+reader then cannot tell a document that is missing from one it is not allowed to read — the
+`404` above arrives headerless and becomes an opaque failure.
+
+**A password-protected share needs two more things**, and one of them is not obvious. The
+share is read with HTTP Basic authentication, the token as the username and the share password
+as the password, which the reference adapter already supports. But sending an `Authorization`
+header makes the request non-simple, so the browser sends a preflight first — and Nextcloud
+answers `OPTIONS` on a protected share with `401`. A preflight that does not answer 2xx fails
+the check no matter which headers it carries, so the share stays unreadable until `OPTIONS` is
+answered before Nextcloud sees it:
+
+```apache
+<LocationMatch "^/public\.php/dav/">
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+  Header always set Access-Control-Allow-Headers "Authorization, Range"
+  Header always set Access-Control-Max-Age "3600"
+
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} OPTIONS
+  RewriteRule ^ - [R=204,L]
+</LocationMatch>
+```
+
+With that in place the preflight answers `204` with the headers, and the share opens. An open
+share needs none of it: a plain `GET` with no `Authorization` is a simple request and is never
+preflighted.
+
+**The cost worth knowing before choosing this route.** On a self-hosted server, CORS is an
+administrator's setting rather than a property of the service. Half the servers a reader meets
+will be configured and half will not, and the person who sees the difference is the child whose
+library will not load. Point a publisher at this section before they publish, not after.
+
 ## Measured and not working
 
 Verified 2026-08-27 against real public folders, with `Origin: https://my.readlet.ru`.
@@ -144,3 +208,7 @@ path from nothing to a published lib.
 
 Reach for Yandex.Disk when the publisher already keeps the material there and will not set up
 hosting.
+
+Reach for a Nextcloud share when the publisher runs their own server and can change its
+configuration — which is the condition, not a detail. A WebDAV share nobody has configured
+looks exactly like one that is broken.
