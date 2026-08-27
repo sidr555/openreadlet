@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAddress } from '../src/address.js'
+import { parseAddress, type Address } from '../src/address.js'
 import type { LibError } from '../src/errors.js'
 import { sourceFor } from '../src/sources/registry.js'
 
@@ -90,5 +90,18 @@ describe('sourceFor', () => {
     expect(sourceFor(parseAddress('yadisk+https://disk.yandex.ru/d/x')).base).toBe(
       'yadisk+https://disk.yandex.ru/d/x',
     )
+  })
+
+  it('refuses a kind it does not know instead of falling back to static', () => {
+    // Unreachable through `parseAddress`, which only ever produces a known kind. The cast
+    // stands in for the mistake this guards: a source added to `SourceKind` and forgotten
+    // here would otherwise be served silently, and wrongly, as a static lib.
+    const rogue = {
+      kind: 'nope',
+      inner: 'https://example.com/x',
+      canonical: 'nope+https://example.com/x',
+    } as unknown as Address
+
+    expect(codeOf(() => sourceFor(rogue))).toBe('insecure-origin')
   })
 })
