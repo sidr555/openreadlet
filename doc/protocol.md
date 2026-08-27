@@ -27,8 +27,20 @@ in the feed, next to the link to the bundle.
 
 ## Layout
 
-The base address of a lib, `{base}`, is an `https://` address with no trailing slash, for
-example `https://s3.example.com/mylib`. Relative to it:
+The base address of a lib is a **source address**: it names not only where the lib lives
+but, optionally, how to reach it. Every implementation must support the plain form —
+`{base}` is an `https://` address with no trailing slash, for example
+`https://s3.example.com/mylib` — and a reader that supports nothing else is fully
+conforming. A source address may also carry a lowercase prefix and a `+` before the
+`https://` form, naming an alternative way of reaching the same kind of content, for
+example `someprefix+https://example.com/mylib`. A prefix is an optional extension: a
+reader that does not recognise one must reject the address rather than guess, and must
+never fetch it as if the prefix were not there — the two forms are not interchangeable,
+because the address after the prefix is not necessarily a location to `GET` from
+directly. This specification defines no prefixes itself; each one is a separate
+extension with its own resolution rule, published on its own.
+
+Relative to `{base}`:
 
 ```
 {base}/about.json           showcase

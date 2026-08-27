@@ -4,8 +4,8 @@
 a document, validate it with hand-written checks and return a typed result. It does nothing
 else, and that is the main thing to know about it.
 
-**The package is not published yet.** This document records the boundary agreed on before
-the work started, so that it does not drift afterwards.
+This document records the boundary agreed on before the work started, so that it does not
+drift afterwards.
 
 ## Why a separate package
 
@@ -25,7 +25,20 @@ before it is substituted into a path, not after. That is not a convenience but a
 boundary, and a boundary belongs in exactly one place.
 
 **Fetching.** An HTTP request with a timeout and an `AbortSignal`, a cap on response size,
-refusal to follow a redirect to another origin, refusal to speak `http`.
+refusal to follow a redirect the source does not allow, refusal to speak `http`.
+
+**Sources.** A source is the thing behind a source address: given a relative path inside
+the lib, it decides which URL to call and, if that call redirects, which landing address
+the redirect may end at. That is the entire boundary — a static source built from a plain
+`https` base joins the path onto it and requires the redirect to stay on the same origin;
+a source built from a prefixed address may call a wholly different URL (an API, not the
+lib's own storage) and land somewhere the base address never mentions, such as a
+short-lived download host named only in that call's own answer. Everything else a fetch
+needs — the size cap, the timeout, forwarding the caller's own `AbortSignal`, the CORS
+probe that tells a blocked read apart from a dead network, address masking for errors, and
+mapping a response to a `LibError` code — is shared, hardened once, and never
+re-implemented per source: a source supplies only the URL to call and the landing policy
+that judges where a redirect may end, nothing about how the call itself is made.
 
 **Validation.** Hand-written, schema-library-free parsing of the five documents with a
 legible rejection: which document, which field, what is wrong. Casting through `as` is not
@@ -114,9 +127,12 @@ format does not change because a lib is closed — closed is a property of the t
 of the protocol, and the same five documents come back either way.
 
 `pic(id)` fetches the cover's bytes as a `Blob` and therefore needs the storage to answer
-with `Access-Control-Allow-Origin`, like any other document. `picUrl(id)` only builds the
-address without touching the network, so it carries none of that requirement — it exists for
-handing to an `<img>` tag, which loads cross-origin images without needing permission.
+with `Access-Control-Allow-Origin`, like any other document. `Lib.directUrl(path)` only
+builds an address without touching the network, so it carries none of that requirement —
+it exists for handing to an `<img>` tag, which loads cross-origin images without needing
+permission. Not every source can offer one: a source resolved through an API rather than
+addressed directly, such as the Yandex.Disk one, has no stable address to hand back and
+returns `null` instead.
 
 ## How this gets verified
 

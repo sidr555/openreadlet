@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-08-27 — 0.3.0
+
+- A lib is now read through a **source**, not a hardcoded fetch of `{base}/…`. A source
+  decides which URL to call for a path and which landing address a redirect there may end
+  at; the size cap, timeout, abort forwarding, CORS diagnosis, address masking and error
+  mapping stay in one shared, hardened `httpGet` and are never re-implemented per source.
+- A subscription address may now carry a lowercase prefix naming which source reads it,
+  `prefix+https://…`. The plain `https://…` form keeps working exactly as before and
+  resolves to the same static source version 1 always used.
+- New: the `yadisk` source reads a lib published as the contents of a public Yandex.Disk
+  folder, resolving a path through the public API and reading the download address it
+  answers with. A resolved address is never reused across calls: it is pinned to a
+  version of the file, and reusing a stale one would answer 200 with stale content.
+- **Breaking:** `Lib.picUrl(id)` is replaced by `Lib.directUrl(path)`. A source that has no
+  stable address to hand back — `yadisk`, resolved through an API rather than addressed
+  directly — returns `null` instead of throwing, so a caller must check for that rather
+  than assume every source can offer one.
+- **Breaking:** the standalone `picUrl(base, id)` is no longer exported from the package.
+  Building a cover address without an open `Lib` no longer has a top-level shortcut; open
+  a `Lib` and call `directUrl` on it.
+- New subpath exports, `@openreadlet/lib/sources/static` and `@openreadlet/lib/sources/yadisk`,
+  so a consumer that builds a `Source` itself and hands it to `openLib` pulls in only the
+  source it uses.
+- Two long-standing defects, fixed while sources were split out of the one fetch path they
+  used to share:
+  - `new URL(landed)`, judging where a redirect landed, ran with no `try` around it. A
+    stand-in `fetch` or an exotic response could make it throw a bare `TypeError` past
+    `LibError`'s contract, reaching a caller that only catches the latter.
+  - Whether a redirect was allowed was a single hardcoded origin comparison inside the
+    fetch path itself. It is now a policy the source supplies — `allowsLanding` — so a
+    source that legitimately lands somewhere the base address never names, such as
+    `yadisk`'s short-lived download host, expresses that as its own rule instead of
+    widening the shared check for everyone.
+
 ## 2026-08-23 — 0.2.0
 
 - A refused request is no longer one code. `storage-unavailable` is new, and separates a
