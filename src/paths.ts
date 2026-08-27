@@ -103,26 +103,76 @@ export function resolveBase(base: string): string {
   return parsed.href.replace(/\/+$/, '')
 }
 
+/**
+ * Builds a relative path to `about.json` — the catalogue metadata.
+ */
+export function aboutPath(): string {
+  return 'about.json'
+}
+
+/**
+ * Builds a relative path to `feed.json` — the library feed.
+ */
+export function feedPath(): string {
+  return 'feed.json'
+}
+
+/**
+ * Builds a relative path to a bundle document, validating the identifier
+ * before it enters the path. The identifier is a security boundary: it runs
+ * once here, so callers never see an unvalidated path.
+ */
+export function bundlePath(id: string): string {
+  return `bundles/${assertId(id, 'id')}.json`
+}
+
+/**
+ * Builds a relative path to a text document, validating the identifier
+ * before it enters the path. The identifier is a security boundary: it runs
+ * once here, so callers never see an unvalidated path.
+ */
+export function textPath(id: string): string {
+  return `text/${assertId(id, 'id')}.md`
+}
+
+/**
+ * Builds a relative path to a picture document, validating the identifier
+ * before it enters the path. The identifier is a security boundary: it runs
+ * once here, so callers never see an unvalidated path.
+ */
+export function picPath(id: string): string {
+  return `pic/${assertId(id, 'id')}.webp`
+}
+
+/**
+ * Builds a relative path to a test document, validating the identifier
+ * before it enters the path. The identifier is a security boundary: it runs
+ * once here, so callers never see an unvalidated path.
+ */
+export function testPath(id: string): string {
+  return `test/${assertId(id, 'id')}.json`
+}
+
 export function aboutUrl(base: string): string {
-  return `${resolveBase(base)}/about.json`
+  return `${resolveBase(base)}/${aboutPath()}`
 }
 
 export function feedUrl(base: string): string {
-  return `${resolveBase(base)}/feed.json`
+  return `${resolveBase(base)}/${feedPath()}`
 }
 
 export function bundleUrl(base: string, id: string): string {
-  return `${resolveBase(base)}/bundles/${assertId(id, 'id')}.json`
+  return `${resolveBase(base)}/${bundlePath(id)}`
 }
 
 export function textUrl(base: string, id: string): string {
-  return `${resolveBase(base)}/text/${assertId(id, 'id')}.md`
+  return `${resolveBase(base)}/${textPath(id)}`
 }
 
 export function picUrl(base: string, id: string): string {
-  return `${resolveBase(base)}/pic/${assertId(id, 'id')}.webp`
+  return `${resolveBase(base)}/${picPath(id)}`
 }
 
 export function testUrl(base: string, id: string): string {
-  return `${resolveBase(base)}/test/${assertId(id, 'id')}.json`
+  return `${resolveBase(base)}/${testPath(id)}`
 }
