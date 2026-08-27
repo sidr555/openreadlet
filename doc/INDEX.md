@@ -14,6 +14,12 @@ Added a file to `doc/`? Add it here too.
 - [adapter.md](adapter.md) — the boundaries of the reference adapter `@openreadlet/lib`:
   what it does, what it does not, the shape of errors
 
+## For publishers
+
+- [providers.md](providers.md) — where a lib can live: the storage that works today with
+  ready CORS configurations, and the storage measured not to work, with the exact point of
+  failure for each
+
 ## Designs
 
 - [specs/2026-08-27-sources-design.md](specs/2026-08-27-sources-design.md) — reading a lib
