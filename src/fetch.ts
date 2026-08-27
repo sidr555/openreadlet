@@ -22,11 +22,8 @@ export interface RequestOptions {
 /** Every fetch in this module stays on the origin it started at. */
 const sameOrigin = (target: URL, landed: URL): boolean => target.origin === landed.origin
 
-const request = (
-  url: string,
-  limit: number,
-  options: RequestOptions,
-): ReturnType<typeof httpGet> => httpGet(url, limit, options, sameOrigin)
+const request = (url: string, limit: number, options: RequestOptions): ReturnType<typeof httpGet> =>
+  httpGet(url, limit, options, sameOrigin)
 
 /**
  * Shared by every caller that turns raw bytes into a JSON document, so a

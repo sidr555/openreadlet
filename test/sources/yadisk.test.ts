@@ -89,9 +89,9 @@ describe('yadiskSource', () => {
       return respond('hello', 'https://evil.example.net/x')
     })
 
-    expect(
-      await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch })),
-    ).toBe('foreign-origin')
+    expect(await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch }))).toBe(
+      'foreign-origin',
+    )
   })
 
   it('has no direct address for a cover', () => {
@@ -153,9 +153,9 @@ describe('yadiskSource', () => {
       respond(JSON.stringify({ href: 'https://evil.example.net/x' }), urlOf(input)),
     )
 
-    expect(
-      await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch })),
-    ).toBe('foreign-origin')
+    expect(await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch }))).toBe(
+      'foreign-origin',
+    )
 
     // The evil address must never be fetched: only the resolve call happens.
     expect(doFetch).toHaveBeenCalledTimes(1)

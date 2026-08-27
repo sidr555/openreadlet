@@ -70,9 +70,31 @@ openLib('https://libs.example.com/private', {
 Requirements for whoever publishes a lib, and ready-made storage configuration,
 are in [doc/protocol.md](doc/protocol.md).
 
-The top-level `picUrl(base, id)` builds a cover address without an open `Lib` and without
-touching the network — handy for a dashboard that only needs `<img>` sources; `lib.picUrl(id)`
-is the same address, built from a lib already open.
+`lib.directUrl(path)` builds a direct address for a document without touching the
+network — handy for handing a cover straight to an `<img>` tag. Not every source can
+offer one: it returns `null` when the lib is not addressed directly, as with the
+Yandex.Disk source below.
+
+## Reading a public Yandex.Disk folder
+
+A source address may carry a prefix naming an alternative way to reach a lib. The
+`yadisk` source reads a lib published as the contents of a public folder there:
+
+```ts
+import { openLib } from '@openreadlet/lib'
+
+const lib = openLib('yadisk+https://disk.yandex.ru/d/Ctzap_DTvZ3xVQ')
+
+const about = await lib.about()
+```
+
+Everything past `openLib` works the same as with a plain `https` address: `about`,
+`feed`, `bundle`, `text`, `test` and `pic` all resolve through the folder. A consumer
+that builds a `Source` itself instead of going through a subscription string — the
+dashboard opening a lib without storing a subscription for it, say — can import
+`staticSource` or `yadiskSource` from their own subpaths, `@openreadlet/lib/sources/static`
+and `@openreadlet/lib/sources/yadisk`, and hand the result straight to `openLib`, so a
+build that never touches the yadisk one does not carry it.
 
 ## Contributing
 
