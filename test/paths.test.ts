@@ -9,7 +9,6 @@ import {
   feedPath,
   feedUrl,
   picPath,
-  picUrl,
   resolveBase,
   testPath,
   testUrl,
@@ -239,7 +238,6 @@ describe('document addresses', () => {
     expect(feedUrl(BASE)).toBe(`${BASE}/feed.json`)
     expect(bundleUrl(BASE, 'spring-2026')).toBe(`${BASE}/bundles/spring-2026.json`)
     expect(textUrl(BASE, 'dawn-song')).toBe(`${BASE}/text/dawn-song.md`)
-    expect(picUrl(BASE, 'dawn-song')).toBe(`${BASE}/pic/dawn-song.webp`)
     expect(testUrl(BASE, 'dawn-song')).toBe(`${BASE}/test/dawn-song.json`)
   })
 

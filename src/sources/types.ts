@@ -14,5 +14,4 @@ export interface Source {
   readonly base: string
   get(path: string, limit: number, options: RequestOptions): Promise<SourcePayload>
   directUrl(path: string): string | null
-  allowsLanding: LandingPolicy
 }

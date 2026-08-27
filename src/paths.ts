@@ -169,10 +169,6 @@ export function textUrl(base: string, id: string): string {
   return `${resolveBase(base)}/${textPath(id)}`
 }
 
-export function picUrl(base: string, id: string): string {
-  return `${resolveBase(base)}/${picPath(id)}`
-}
-
 export function testUrl(base: string, id: string): string {
   return `${resolveBase(base)}/${testPath(id)}`
 }

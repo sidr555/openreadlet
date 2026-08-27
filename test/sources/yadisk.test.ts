@@ -94,6 +94,26 @@ describe('yadiskSource', () => {
     )
   })
 
+  it('maps a resolve answer that is not valid JSON to bad-json', async () => {
+    const doFetch = vi.fn(async (input: RequestInfo | URL) =>
+      respond('not json at all', urlOf(input)),
+    )
+
+    expect(await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch }))).toBe(
+      'bad-json',
+    )
+  })
+
+  it('maps a resolve answer with no usable href to schema-mismatch', async () => {
+    const doFetch = vi.fn(async (input: RequestInfo | URL) =>
+      respond(JSON.stringify({ size: 1234 }), urlOf(input)),
+    )
+
+    expect(await codeOf(() => yadiskSource(INNER).get('text/a.md', 1000, { fetch: doFetch }))).toBe(
+      'schema-mismatch',
+    )
+  })
+
   it('has no direct address for a cover', () => {
     expect(yadiskSource(INNER).directUrl('pic/dawn-song.webp')).toBeNull()
   })
